@@ -177,14 +177,17 @@ export default function OnlineStudio({ eventId = null }) {
 
   useEffect(() => {
     if (!eventId) return;
-    try {
-      const savedName = normalizeNickname(localStorage.getItem(NICKNAME_KEY_PREFIX + eventId));
-      setParticipantName(savedName);
-      setShowEditor(Boolean(savedName));
-    } catch { /* A disabled browser store must not prevent joining a room. */ }
-    finally {
-      setParticipantReady(true);
-    }
+    const timer = window.setTimeout(() => {
+      try {
+        const savedName = normalizeNickname(localStorage.getItem(NICKNAME_KEY_PREFIX + eventId));
+        setParticipantName(savedName);
+        setShowEditor(Boolean(savedName));
+      } catch { /* A disabled browser store must not prevent joining a room. */ }
+      finally {
+        setParticipantReady(true);
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [eventId]);
 
   const refresh = useCallback(async () => {
