@@ -1,0 +1,26 @@
+{
+  "name": "pixelsdraw",
+  "version": "0.1.0",
+  "private": true,
+  "engines": { "node": ">=22 <25" },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "test": "node --test tests/*.test.mjs",
+    "test:database": "node tests/database/competition-rules.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.117.2",
+    "gifenc": "1.0.3",
+    "next": "16.3.8",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.8"
+  }
+}

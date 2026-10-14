@@ -1,0 +1,52 @@
+/* Website appearance is shared across every route, independently of artwork. */
+.website-header { height: 52px; padding: 4px 14px; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px; border-bottom: 1px solid #ded9e5; background: #faf9fc; }
+.website-actions { justify-self: end; }
+.skip-link { position: fixed; top: 8px; left: 8px; z-index: 1000; padding: 12px 16px; border-radius: 8px; background: #6d28d9; color: white; transform: translateY(-150%); }
+.skip-link:focus { transform: translateY(0); }
+.website-brand, .website-header nav { display: flex; align-items: center; gap: 10px; }
+.website-header .brand { font-size: 13px; }
+.website-header .nav-link { padding: 7px 10px; font-size: 12px; }
+.website-theme-toggle { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #cfc8d7; border-radius: 10px; background: white; color: #5b21b6; font-size: 20px; cursor: pointer; }
+.website-theme-toggle:focus-visible { outline: 2px solid #7c3aed; outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+:where(a, button, input, select, textarea, summary):focus-visible { outline: 2px solid #7c3aed; outline-offset: 3px; }
+button:disabled { cursor: not-allowed; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+html[data-theme=dark] { color-scheme: dark; background: #17131f; color: #ece8f4; }
+html[data-theme=dark] body { background: #17131f; color: #ece8f4; }
+html[data-theme=dark] .website-header { background: #211b2b; border-color: #44384f; }
+html[data-theme=dark] .brand { color: #ece8f4; }
+html[data-theme=dark] .nav-link { color: #c4b5d9; }
+html[data-theme=dark] .nav-link.active, html[data-theme=dark] .nav-link:hover { background: #493568; color: #ede9fe; }
+html[data-theme=dark] .website-theme-toggle { background: #30293f; color: #ede9fe; border-color: #51445f; }
+html[data-theme=dark] :is(.competition, .account-panel, .join-card, .competition-card-link, .event-list a, .nickname-card, .host-dashboard, .participant-callout, .activity-card) { background: #252130; color: #ece8f4; border-color: #51445f; }
+html[data-theme=dark] :is(.competition, .account-panel, .join-card, .nickname-card, .host-dashboard) :is(input, select, textarea), html[data-theme=dark] :is(.google-button, .email-link-button, .secondary-button) { background: #30293f; color: #ece8f4; border-color: #665477; }
+html[data-theme=dark] :is(.competition-hero > p, .competition p, .account-panel p, .event-list span, .refresh-row, .nickname-card p, .participant-callout p, .host-dashboard p, .signin-divider, .setup-guide li) { color: #c4b5d9; }
+html[data-theme=dark] :is(.eyebrow, .online-nav a, .setup-guide a, .competition a:not(.primary-button), .competition-card-link small) { color: #c4b5fd; }
+html[data-theme=dark] :is(.event-list a:hover, .google-button:hover:not(:disabled), .email-link-button:hover:not(:disabled), .setup-guide pre) { background: #493568; color: #ede9fe; }
+html[data-theme=dark] :is(.event-code, .event-settings, .join-fields, .participant-session, .waiting-lobby, .activity-stats > div, .host-setting) { border-color: #51445f; }
+html[data-theme=dark] .lab-header { background: #211b2b; color: #ece8f4; }
+html[data-theme=dark] .lab-header :is(a, span) { color: #c4b5fd; }
+html[data-theme=dark] :is(.host-area, .create-event-card, .your-events, .host-signin-note, .empty-state, .participant-session, .ballot-card, .host-settings, .gallery-locked, .roster-card, .participant-roster > div, .host-dashboard > div, .entry-card, .local-notice, .event-summary > *) { background: #252130; color: #ece8f4; border-color: #51445f; }
+html[data-theme=dark] :is(.host-area, .host-settings, .ballot-card, .submission-form) :is(input:not([type=checkbox]), select, textarea) { background: #30293f; color: #ece8f4; border-color: #665477; }
+html[data-theme=dark] :is(.section-heading > p, .host-signin-note, .host-dashboard span, .nickname-card p, .roster-card span, .participant-roster small, .host-settings label, .join-card p, .submission-form p, .participant-session span, .empty-gallery) { color: #c4b5d9; }
+html[data-theme=dark] :is(.host-dashboard strong, .text-button, .participant-session a, .rank-label, .event-summary strong) { color: #c4b5fd; }
+html[data-theme=dark] .waiting-callout { background: linear-gradient(135deg, #30293f, #3d314f); }
+html[data-theme=dark] .success-notice { background: #123c32; color: #a7f3d0 !important; }
+html[data-theme=dark] .error-notice { background: #4b2230; color: #fecdd3; }
+@media (max-width: 500px) {
+  .website-header { height: 96px; padding: 4px 12px; gap: 0 8px; grid-template-columns: minmax(0, 1fr) auto; }
+  .website-brand { grid-column: 1; grid-row: 1; }
+  .website-actions { grid-column: 2; grid-row: 1; }
+  .website-header nav { grid-column: 1 / -1; grid-row: 2; justify-content: center; }
+  .website-brand { gap: 6px; }
+  .website-header .brand-mark { display: none; }
+  .website-header .brand { font-size: 11px; }
+  .website-header .brand > span:last-child { display: inline; }
+  .website-header nav { gap: 0; }
+  .website-header .nav-link { padding: 7px; font-size: 11px; }
+}
+@media (max-width: 350px) {
+  .website-header .brand > span:last-child { display: none; }
+  .website-header .brand-mark { display: grid; }
+}

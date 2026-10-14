@@ -1,0 +1,16 @@
+node_modules
+.next
+.next-build
+.env*
+work
+outputs
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.vscode
+.github
+.cursor
+.claude
+.codex
+.agents
+EDITOR-LAB.md

@@ -1,0 +1,36 @@
+# dependencies
+/node_modules
+
+# Next.js build output
+/.next
+/.next-build
+/out
+
+# local files
+.DS_Store
+*.log
+.env*
+!.env.example
+.vercel
+
+# Local workspace files
+/.vscode/
+/outputs/
+/work/
+/EDITOR-LAB.md
+/coverage/
+*.tsbuildinfo
+*.pem
+*.key
+.npmrc
+
+# Editor assistant configuration
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.cursorrules
+.cursor/
+.claude/
+.codex/
+.agents/
+.github/copilot-instructions.md
