@@ -8,7 +8,7 @@ export const metadata = {
 };
 
 export default function TermsPage() {
-  return <PolicyPage title="Terms & community rules" introduction="Pixel Art Studio is a beta pixel-art editor and competition platform operated by Alish Pandey. These terms describe the conditions for using the service. Questions or concerns can be sent to alishpandey07@gmail.com.">
+  return <PolicyPage title="Terms & community rules" introduction="Pixel Art Studio is a beta pixel-art editor and competition platform. These terms describe the conditions for using the service. Questions or concerns can be sent to alishpandey07@gmail.com.">
     <section><h2>Your account and participation</h2>
       <p>Keep your sign-in account secure and use the service only where you are permitted to do so. Do not impersonate another person or access another account. Hosted rooms may allow nickname-only guests; public challenges require a confirmed account to enter or vote.</p>
       <p>Read the rules and deadlines for each competition. Hosts control their own room settings, while public challenges follow the displayed automatic schedule. A room code or direct link may be shared by anyone who has it.</p>

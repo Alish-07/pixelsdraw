@@ -8,7 +8,7 @@ export const metadata = {
 };
 
 export default function PrivacyPage() {
-  return <PolicyPage title="Privacy policy" introduction="This policy explains how Pixel Art Studio handles information when you draw, sign in, join competitions or report artwork. The service is operated by Alish Pandey. For privacy questions, contact alishpandey07@gmail.com.">
+  return <PolicyPage title="Privacy policy" introduction="This policy explains how Pixel Art Studio handles information when you draw, sign in, join competitions or report artwork. For privacy questions, contact alishpandey07@gmail.com.">
     <section><h2>Drawing on your device</h2>
       <p>The standalone editor saves editable drafts in your browser using IndexedDB and local storage. Preferences such as appearance, panel sizes and saved nicknames may also stay on your device. Drawing in the standalone editor does not by itself publish your artwork.</p>
       <p>Browser drafts are not a cloud backup. Clearing site data, changing browsers or moving to another website address can make them unavailable. Export important work before making those changes.</p>
