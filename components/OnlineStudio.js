@@ -439,7 +439,7 @@ export default function OnlineStudio({ eventId = null }) {
   }
 
   if (!client) return <main id="main-content" tabIndex={-1} className="page-shell competition-page"><section className="competition unavailable-card">
-    <p className="eyebrow">We'll be back soon</p><h2>Competitions are taking a short break.</h2>
+    <p className="eyebrow">We&apos;ll be back soon</p><h2>Competitions are taking a short break.</h2>
     <p>You can still create pixel art in the studio. Please try competitions again later.</p>
     <Link className="primary-button button-link" href="/">Open studio</Link>
   </section></main>;
@@ -457,7 +457,7 @@ export default function OnlineStudio({ eventId = null }) {
       {user && moderator === user.id && <><button className="secondary-button" aria-expanded={moderatorPanel} onClick={() => setModeratorPanel(!moderatorPanel)}>{moderatorPanel ? "Close moderation" : "Review public reports"}</button>{moderatorPanel && <ModerationPanel key={user.id} client={client} />}</>}
       <section className="competition-hero">
         <p className="eyebrow">Play with friends</p><h2>Got a room code?</h2>
-        <p>Join your group's competition and bring the theme to life.</p>
+        <p>Join your group&apos;s competition and bring the theme to life.</p>
         <form className="join-card" onSubmit={joinCompetition}>
           <div className="join-fields"><label htmlFor="join-code">Competition code
             <input id="join-code" name="joinCode" inputMode="numeric" autoComplete="off" required maxLength={8} placeholder="123 456" aria-describedby="join-help" /></label>

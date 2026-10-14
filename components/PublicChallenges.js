@@ -13,6 +13,7 @@ export default function PublicChallenges({ client }) {
   const [archiveLimit, setArchiveLimit] = useState(12);
   const [now, setNow] = useState(0);
   const request = useRef(0);
+  const invalidateRequests = useCallback(() => { request.current++; }, []);
   const load = useCallback(async () => {
     const id = ++request.current;
     try {
@@ -32,8 +33,8 @@ export default function PublicChallenges({ client }) {
     const resume = () => { if (document.visibilityState === "visible") { setNow(Date.now()); load(); } };
     window.addEventListener("online", resume);
     document.addEventListener("visibilitychange", resume);
-    return () => { cancelled = true; request.current++; window.clearTimeout(first); window.clearInterval(poll); window.clearInterval(clock); window.removeEventListener("online", resume); document.removeEventListener("visibilitychange", resume); };
-  }, [load]);
+    return () => { cancelled = true; invalidateRequests(); window.clearTimeout(first); window.clearInterval(poll); window.clearInterval(clock); window.removeEventListener("online", resume); document.removeEventListener("visibilitychange", resume); };
+  }, [load, invalidateRequests]);
   // Keep the latest slot for each lane, including its quiet results interval.
   const current = rounds.filter((round, i) => rounds.findIndex(other => other.challenge_key === round.challenge_key) === i);
   const shown = archive ? rounds.filter(round => round.phase === "results" && (lane === "all" || round.challenge_key === lane)) : current;
@@ -57,6 +58,6 @@ export default function PublicChallenges({ client }) {
       <Link className="primary-button button-link" aria-label={`${round.phase === "submissions" ? "Join" : round.phase === "voting" ? "Vote in" : "View results for"} ${round.title}`} href={`/events/${round.id}`}>{round.phase === "submissions" ? "Start creating" : round.phase === "voting" ? "Explore & vote" : "See results"}<span aria-hidden="true"> →</span></Link>
     </article>)}{!shown.length && !error && <p>{archive ? "No completed rounds yet. Results will appear here automatically." : "The first public rounds are starting shortly."}</p>}</div>}
     {archive && shown.length > archiveLimit && <button className="secondary-button" onClick={() => setArchiveLimit(archiveLimit + 12)}>Show more results</button>}
-    <details className="challenge-guide"><summary>How to take part</summary><div><p>Browse any challenge. Sign in with Google or email when you're ready to enter or vote.</p><p>Submit one original piece before drawing closes. Entries are revealed together when voting opens. Rank up to three favorites; you can change your vote until the timer ends. You can't vote for your own entry.</p><p>Quick-play challenges start every 20 minutes. Daily challenges start at midnight UTC. Both finish with a community vote.</p><p>Be kind, share original work, and keep the gallery welcoming. If something doesn't belong, use “Report artwork” in the gallery.</p></div></details>
+    <details className="challenge-guide"><summary>How to take part</summary><div><p>Browse any challenge. Sign in with Google or email when you&apos;re ready to enter or vote.</p><p>Submit one original piece before drawing closes. Entries are revealed together when voting opens. Rank up to three favorites; you can change your vote until the timer ends. You can&apos;t vote for your own entry.</p><p>Quick-play challenges start every 20 minutes. Daily challenges start at midnight UTC. Both finish with a community vote.</p><p>Be kind, share original work, and keep the gallery welcoming. If something doesn&apos;t belong, use “Report artwork” in the gallery.</p></div></details>
   </section>;
 }

@@ -12,6 +12,7 @@ export default function ModerationPanel({ client }) {
   const [loaded, setLoaded] = useState(false);
   const [offset, setOffset] = useState(0);
   const request = useRef(0);
+  const invalidateRequests = useCallback(() => { request.current++; }, []);
   const load = useCallback(async () => {
     const id = ++request.current;
     setLoaded(false);
@@ -23,7 +24,7 @@ export default function ModerationPanel({ client }) {
     } catch (error) { if (id === request.current) { setReports([]); setMessage(error.message || "Could not load reports."); } }
     finally { if (id === request.current) setLoaded(true); }
   }, [client, closed, offset]);
-  useEffect(() => { const timer = window.setTimeout(load, 0); return () => { window.clearTimeout(timer); request.current++; }; }, [load]);
+  useEffect(() => { const timer = window.setTimeout(load, 0); return () => { window.clearTimeout(timer); invalidateRequests(); }; }, [load, invalidateRequests]);
   async function review(event, id) {
     event.preventDefault();
     if (busy) return;
