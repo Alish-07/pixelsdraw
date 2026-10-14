@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { friendlyAuthError } from "@/lib/site-ui.mjs";
 
 export default function AccountPanel({ client, user, ready, publicChallenge = false }) {
@@ -103,6 +104,7 @@ export default function AccountPanel({ client, user, ready, publicChallenge = fa
             <button className="email-link-button" disabled={busy || emailWait > 0}>{busy ? "Please wait…" : emailWait ? `Send again in ${emailWait}s` : "Send sign-in link"}</button>
           </form>
           <p className="email-limit-note">No password to remember. Having trouble getting a link? Try Google.</p>
+          <p className="account-policy-note">Read our <Link href="/privacy">privacy policy</Link> and <Link href="/terms">community rules and terms</Link> before participating.</p>
         </div>
       )}
       {message && <p role="status">{message}</p>}

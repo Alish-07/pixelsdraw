@@ -3,6 +3,7 @@ import "./editor.css";
 import "./theme.css";
 import "./competition.css";
 import SiteHeader from "@/components/SiteHeader";
+import SiteFooter from "@/components/SiteFooter";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { siteUrl, allowIndexing } from "@/lib/site-config.mjs";
 import Script from "next/script";
@@ -23,7 +24,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body><Script id="site-appearance" strategy="beforeInteractive">{THEME_BOOTSTRAP}</Script><ThemeProvider><a className="skip-link" href="#main-content">Skip to content</a><SiteHeader />{children}</ThemeProvider></body>
+      <body><Script id="site-appearance" strategy="beforeInteractive">{THEME_BOOTSTRAP}</Script><ThemeProvider><a className="skip-link" href="#main-content">Skip to content</a><SiteHeader />{children}<SiteFooter /></ThemeProvider></body>
     </html>
   );
 }
