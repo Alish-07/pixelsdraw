@@ -29,18 +29,26 @@ test('brand animation has a user-controlled static fallback', async () => {
   const logo = await source('components/BrandLogo.js');
   const preferences = await source('components/StudioPreferences.js');
   const editor = await source('components/PixelCanvas.js');
-  const settings = await source('components/SiteSettings.js');
+  const header = await source('components/SiteHeader.js');
   assert.doesNotMatch(logo, /<button|Pause logo animation|Play logo animation/);
   assert.match(logo, /useStudioPreferences/);
   assert.match(logo, /prefers-reduced-motion: reduce/);
   assert.match(logo, /animateLogo \? "\/brand\/pixel-comet-animated.svg" : "\/brand\/pixel-comet-static.svg"/);
   assert.match(preferences, /Animate website logo/);
   assert.match(editor, /<LogoAnimationSetting/);
-  assert.match(settings, /<LogoAnimationSetting/);
+  assert.doesNotMatch(header, /SiteSettings/);
 });
 
 test('legacy mobile styles do not hide the brand wordmark', async () => {
   assert.doesNotMatch(await source('app/globals.css'), /\.brand\s*>\s*span:last-child\s*\{\s*display:\s*none/);
+});
+
+test('basic workspace keeps transforms and readable dark-mode mirror controls', async () => {
+  const editor = await source('components/PixelCanvas.js');
+  const styles = await source('app/studio-polish.css');
+  assert.match(editor, /<section className="transform-panel" aria-label="Transforms">/);
+  assert.doesNotMatch(editor, /advancedWorkspace && <section className="transform-panel"/);
+  assert.match(styles, /\[data-theme=dark\] \.grid-toggle \{ color: #f1ede5;/);
 });
 
 test('public-facing names and metadata no longer use the old brand', async () => {

@@ -1061,7 +1061,7 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
           </section>
           <section className="settings-section"><h3>Workspace</h3>
             <label>Workspace mode<select aria-label="Workspace mode" value={workspaceMode} onChange={event => updatePreferences({ workspaceMode: event.target.value })}><option value="simple">Simple</option><option value="advanced">Advanced</option></select></label>
-            <small>Advanced shows layers, frames and transforms. Switching modes never deletes artwork.</small>
+            <small>Advanced shows layers and animation frames. Switching modes never deletes artwork.</small>
             <label className="compact-control">Canvas zoom<select value={zoom} onChange={(event) => setZoom(Number(event.target.value))}><option value="0">Fit</option>{zoom > 0 && ![1, 2, 4, 8, 16, 32].includes(zoom) && <option value={zoom}>{Math.round(zoom * 100)}%</option>}{[1, 2, 4, 8, 16, 32].map((scale) => <option value={scale} key={scale}>{scale}×</option>)}</select></label>
             <label className="help-setting"><input type="checkbox" checked={resizablePanels} onChange={(event) => setResizablePanels(event.target.checked)} /> Resizable side panels</label>
             <small>Off keeps the current panel widths fixed.</small>
@@ -1154,14 +1154,14 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
           <button type="button" onClick={() => { setPalette((items) => items.map((color, index) => index === editingSlot ? null : color)); setEditingSlot(null); }}>Empty slot</button>
         </div>}
         <div className="panel-divider" />
-{advancedWorkspace && <section className="transform-panel" aria-label="Transforms"><p className="panel-title">Transform tools</p><small className="transform-caption">Selection or active layer</small>
+        <section className="transform-panel" aria-label="Transforms"><p className="panel-title">Transform tools</p><small className="transform-caption">Selection or active layer</small>
         <div className="transform-actions" aria-label="Transform selection or active layer">
           <button type="button" aria-label="Flip horizontally" data-tooltip="Flip horizontally" {...helpProps("Flip horizontally", "Mirror the selection or entire active layer from left to right.")} onClick={() => transformArtwork("flipX")}>↔</button>
           <button type="button" aria-label="Flip vertically" data-tooltip="Flip vertically" {...helpProps("Flip vertically", "Mirror the selection or entire active layer from top to bottom.")} onClick={() => transformArtwork("flipY")}>↕</button>
           <button type="button" aria-label="Rotate clockwise" data-tooltip="Rotate 90°" {...helpProps("Rotate clockwise", "Rotate the selection or active layer 90°. If it will not fit, resize first; pixels are never silently cropped.")} onClick={() => transformArtwork("rotate")}>⟳</button>
           <button type="button" aria-label="Invert colors" data-tooltip="Invert colors" {...helpProps("Invert colors", "Swap each painted color with its RGB opposite in the selection or active layer. Transparent pixels stay transparent.")} onClick={invertArtwork}>◐</button>
         </div>
-</section>}
+        </section>
         {!advancedWorkspace && <section className="simple-workspace-note" aria-label="Simple workspace">
           <h3>Simple workspace</h3><p>Editing frame {activeFrame + 1} · {currentLayer.name}</p>
           {currentLayer.locked && <p>This layer is locked. Open advanced controls to unlock it.</p>}
