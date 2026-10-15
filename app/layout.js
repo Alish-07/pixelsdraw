@@ -3,7 +3,9 @@ import "./editor.css";
 import "./theme.css";
 import "./competition.css";
 import "./studio-polish.css";
+import "./site-polish.css";
 import SiteHeader from "@/components/SiteHeader";
+import { AuthProvider } from "@/components/AuthProvider";
 import SiteFooter from "@/components/SiteFooter";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { StudioPreferencesProvider } from "@/components/StudioPreferences";
@@ -27,7 +29,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body><Script id="site-appearance" strategy="beforeInteractive">{THEME_BOOTSTRAP}</Script><ThemeProvider><StudioPreferencesProvider><a className="skip-link" href="#main-content">Skip to content</a><SiteHeader />{children}<SiteFooter /></StudioPreferencesProvider></ThemeProvider></body>
+      <body><Script id="site-appearance" strategy="beforeInteractive">{THEME_BOOTSTRAP}</Script><ThemeProvider><AuthProvider><StudioPreferencesProvider><a className="skip-link" href="#main-content">Skip to content</a><SiteHeader />{children}<SiteFooter /></StudioPreferencesProvider></AuthProvider></ThemeProvider></body>
     </html>
   );
 }

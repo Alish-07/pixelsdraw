@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { friendlyAuthError } from "@/lib/site-ui.mjs";
 
-export default function AccountPanel({ client, user, ready, publicChallenge = false }) {
+export default function AccountPanel({ client, user, ready, publicChallenge = false, general = false }) {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [emailWait, setEmailWait] = useState(0);
@@ -81,7 +81,7 @@ export default function AccountPanel({ client, user, ready, publicChallenge = fa
 
   return (
     <section className="account-panel" aria-label="Account">
-      {!ready ? <p>Checking your account…</p> : user?.is_anonymous && !publicChallenge ? (
+      {!ready ? <p>Checking your account…</p> : user?.is_anonymous && !publicChallenge && !general ? (
         <div className="account-row"><span>Playing as a guest</span>
           <button className="google-button" type="button" disabled={busy}
             onClick={() => signInWithGoogle({ replaceAnonymousSession: true })}>
@@ -93,7 +93,7 @@ export default function AccountPanel({ client, user, ready, publicChallenge = fa
           <button className="text-button" disabled={busy} onClick={signOut}>Sign out</button></div>
       ) : (
         <div className="host-signin-options">
-          <div><h3>{publicChallenge ? "Join the challenge" : "Create your own competition"}</h3><p>{publicChallenge ? "Sign in to share your art and vote for your favorites." : "Sign in to host. Your friends can join with just a nickname."}</p></div>
+          <div><h3>{general ? "Welcome to PixelsDraw" : publicChallenge ? "Join the challenge" : "Create your own competition"}</h3><p>{general ? "Sign in with Google or an email link." : publicChallenge ? "Sign in to share your art and vote for your favorites." : "Sign in to host. Your friends can join with just a nickname."}</p></div>
           <button className="google-button" type="button" disabled={busy} onClick={() => signInWithGoogle({ replaceAnonymousSession: Boolean(user?.is_anonymous) })}>
             <span className="google-mark" aria-hidden="true">G</span>
             {busy ? "Opening Google…" : "Continue with Google"}

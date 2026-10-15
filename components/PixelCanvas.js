@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { editorDraftKeys, readLabDraft, saveLabDraft } from "@/lib/editor-lab-storage.mjs";
 import { applyPalette, GIFEncoder, quantize } from "gifenc";
 import { allowsCanvas, canvasRules, describeCanvas, validateCompetitionArtwork } from "@/lib/competition-rules.mjs";
@@ -8,6 +9,8 @@ import { useTheme } from "./ThemeProvider";
 import { LogoAnimationSetting, useStudioPreferences } from "./StudioPreferences";
 import { editorMenuPosition, workspacePanels } from "@/lib/studio-preferences.mjs";
 import { savedFrameRate } from "@/lib/site-ui.mjs";
+import { libraryOwner, saveDrawing } from "@/lib/drawing-library.mjs";
+import { useAuth } from "./AuthProvider";
 import { brushFootprints, ditherAccept, invertColor, rasterBytes, reorderLayers, nextLayerName, panelWidth, placeFloating, pointerPixel, renumberLayers, transformClip, zoomScale } from "@/lib/editor-lab.mjs";
 import {
   brushIndices, compositeRgba, copyPixels, ellipseIndices, fillArea, flattenFrame, lineIndices,
@@ -113,6 +116,9 @@ function ShapePreview({ indices, width, height, color }) {
 }
 
 export default function PixelCanvas({ isActive = true, competition = null, onSubmitArtwork, participantName = "", storageScope = "main" }) {
+  const { user, ready: authReady } = useAuth();
+  const [libraryMessage, setLibraryMessage] = useState("");
+  const [savingCopy, setSavingCopy] = useState(false);
   const rules = canvasRules(competition);
   const requiredSize = competition && rules.mode === "fixed" ? rules.sizes[0] : null;
   const defaultSize = competition?.size || 16;
@@ -232,7 +238,7 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
       let oldSaved = null;
       try {
         saved = localStorage.getItem(draftKey) || localStorage.getItem(legacyKey);
-        oldSaved = !competition && !stored && !saved ? localStorage.getItem(OLD_STORAGE_KEY) : null;
+        oldSaved = storageScope === "main" && !competition && !stored && !saved ? localStorage.getItem(OLD_STORAGE_KEY) : null;
       } catch { /* IndexedDB drafts still work when localStorage is unavailable. */ }
       if (!stored && !saved && labFallback) { try { stored = await readLabDraft(labFallback); } catch { /* Start a fresh main draft if no lab draft exists. */ } }
       let document = stored || (saved ? JSON.parse(saved) : null);
@@ -299,7 +305,7 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
     return () => { cancelled = true; };
   // Rules use a stable serialized key so polling does not reload the draft.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftKey, legacyKey, labFallback, requiredSize, defaultSize, ruleKey]);
+  }, [draftKey, legacyKey, labFallback, requiredSize, defaultSize, ruleKey, storageScope]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -1019,6 +1025,16 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
     }
   }
 
+  async function saveLibraryCopy() {
+    if (!loaded || !authReady || savingCopy) return;
+    setSavingCopy(true);
+    try {
+      await saveDrawing(libraryOwner(user), { version: 3, width, height, frames, activeFrame, activeLayer, fps, palette, paletteSlots: true, artworkTitle });
+      setLibraryMessage("Copy saved to My drawings on this browser.");
+    } catch { setLibraryMessage("Could not save a copy. Download your drawing to keep it safe."); }
+    finally { setSavingCopy(false); }
+  }
+
   const preview = frames[playing && advancedWorkspace ? Math.min(previewFrame, frames.length - 1) : activeFrame];
   const availablePresets = competition && rules.mode !== "range" ? rules.sizes.map((size) => [size, size]) : PRESETS.filter(([w, h]) => !competition || allowsCanvas(rules, w, h));
   const presetValue = availablePresets.some(([w, h]) => w === width && h === height) ? `${width}x${height}` : "custom";
@@ -1084,13 +1100,15 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
           </section>
         </fieldset></details>
       </div>
-      <div className="history-controls" aria-label="Canvas history">
+    <div className="history-controls" aria-label="Canvas history">
+        <button type="button" onClick={saveLibraryCopy} disabled={!loaded || !authReady || savingCopy} title="Save an editable copy to My drawings in this browser">{savingCopy ? "Saving…" : "Save copy"}</button>
         <button type="button" onClick={undo} disabled={!history.length} title="Undo (Ctrl / Cmd Z)"><span aria-hidden="true">↶</span> Undo</button>
         <button type="button" onClick={redo} disabled={!future.length} title="Redo (Ctrl / Cmd Shift Z, or Ctrl Y)"><span aria-hidden="true">↷</span> Redo</button>
       </div>
     </div>
 
 
+    {libraryMessage && <p className="library-save-message" role="status">{libraryMessage} <Link href="/drawings">View drawings</Link><button type="button" aria-label="Dismiss save message" onClick={() => setLibraryMessage("")}>×</button></p>}
     <fieldset ref={workspaceRef} className="workspace" disabled={!loaded} style={{ "--left-panel-width": `${leftWidth}px`, "--right-panel-width": `${rightWidth}px` }}>
       <aside className="tool-panel" aria-label="Drawing tools">
         <p className="panel-title">Tools</p><div className="tool-list">{TOOLS.map((tool) => <button key={tool.id} type="button"
