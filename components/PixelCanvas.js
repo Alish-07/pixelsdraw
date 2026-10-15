@@ -9,8 +9,7 @@ import { useTheme } from "./ThemeProvider";
 import { LogoAnimationSetting, useStudioPreferences } from "./StudioPreferences";
 import { editorMenuPosition, workspacePanels } from "@/lib/studio-preferences.mjs";
 import { savedFrameRate } from "@/lib/site-ui.mjs";
-import { libraryOwner, saveDrawing } from "@/lib/drawing-library.mjs";
-import { useAuth } from "./AuthProvider";
+import DrawingSaveControl from "./DrawingSaveControl";
 import { brushFootprints, ditherAccept, invertColor, rasterBytes, reorderLayers, nextLayerName, panelWidth, placeFloating, pointerPixel, renumberLayers, transformClip, zoomScale } from "@/lib/editor-lab.mjs";
 import {
   brushIndices, compositeRgba, copyPixels, ellipseIndices, fillArea, flattenFrame, lineIndices,
@@ -116,9 +115,7 @@ function ShapePreview({ indices, width, height, color }) {
 }
 
 export default function PixelCanvas({ isActive = true, competition = null, onSubmitArtwork, participantName = "", storageScope = "main" }) {
-  const { user, ready: authReady } = useAuth();
   const [libraryMessage, setLibraryMessage] = useState("");
-  const [savingCopy, setSavingCopy] = useState(false);
   const rules = canvasRules(competition);
   const requiredSize = competition && rules.mode === "fixed" ? rules.sizes[0] : null;
   const defaultSize = competition?.size || 16;
@@ -414,7 +411,7 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
   // Rebind after renders so shortcuts always use the current document and selection.
   useEffect(() => {
     function chooseTool(event) {
-      if (!loaded || !isActive || isDrawing || shortcutsRef.current?.open || event.target.closest("input, select, textarea, [contenteditable=true]")) return;
+      if (!loaded || !isActive || isDrawing || shortcutsRef.current?.open || event.target.closest("dialog, input, select, textarea, [contenteditable=true]")) return;
       const key = event.key.toLowerCase();
       if (event.ctrlKey || event.metaKey) {
         const commands = {
@@ -1025,16 +1022,6 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
     }
   }
 
-  async function saveLibraryCopy() {
-    if (!loaded || !authReady || savingCopy) return;
-    setSavingCopy(true);
-    try {
-      await saveDrawing(libraryOwner(user), { version: 3, width, height, frames, activeFrame, activeLayer, fps, palette, paletteSlots: true, artworkTitle });
-      setLibraryMessage("Copy saved to My drawings on this browser.");
-    } catch { setLibraryMessage("Could not save a copy. Download your drawing to keep it safe."); }
-    finally { setSavingCopy(false); }
-  }
-
   const preview = frames[playing && advancedWorkspace ? Math.min(previewFrame, frames.length - 1) : activeFrame];
   const availablePresets = competition && rules.mode !== "range" ? rules.sizes.map((size) => [size, size]) : PRESETS.filter(([w, h]) => !competition || allowsCanvas(rules, w, h));
   const presetValue = availablePresets.some(([w, h]) => w === width && h === height) ? `${width}x${height}` : "custom";
@@ -1101,7 +1088,7 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
         </fieldset></details>
       </div>
     <div className="history-controls" aria-label="Canvas history">
-        <button type="button" onClick={saveLibraryCopy} disabled={!loaded || !authReady || savingCopy} title="Save an editable copy to My drawings in this browser">{savingCopy ? "Saving…" : "Save copy"}</button>
+        <DrawingSaveControl disabled={!loaded} onSaved={setLibraryMessage} onRename={setArtworkTitle} getDocument={() => ({ version: 3, width, height, frames, activeFrame, activeLayer, fps, palette, paletteSlots: true, artworkTitle })} />
         <button type="button" onClick={undo} disabled={!history.length} title="Undo (Ctrl / Cmd Z)"><span aria-hidden="true">↶</span> Undo</button>
         <button type="button" onClick={redo} disabled={!future.length} title="Redo (Ctrl / Cmd Shift Z, or Ctrl Y)"><span aria-hidden="true">↷</span> Redo</button>
       </div>
