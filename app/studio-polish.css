@@ -1,0 +1,47 @@
+/* Studio-polish branch: warm neutral surfaces, with color reserved for artwork. */
+.website-actions { display: flex; align-items: center; gap: 6px; }
+.site-settings { position: relative; }
+.site-settings summary { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #cfc8bd; border-radius: 10px; background: #fffdf8; color: #554b40; cursor: pointer; list-style: none; font-size: 22px; }
+.site-settings summary::-webkit-details-marker { display: none; }
+.site-settings-content { position: absolute; right: 0; top: calc(100% + 8px); z-index: 120; width: min(280px, calc(100vw - 24px)); padding: 16px; border: 1px solid #d8d2c8; border-radius: 12px; background: #fffdf8; box-shadow: 0 12px 35px #24242420; }
+.site-settings-content h2 { margin: 0 0 12px; font-size: 15px; }
+.site-settings-content label { font-size: 13px; }
+.site-settings-content p { font-size: 12px; color: #6d665c; line-height: 1.6; margin-bottom: 0; }
+.site-settings-content input { accent-color: #a34714; }
+.website-header { background: #faf8f3; border-color: #d9d4ca; }
+.website-header .nav-link.active, .website-header .nav-link:hover { color: #8e3c12; background: #f7e9dc; }
+.website-theme-toggle { background: #fffdf8; border-color: #cfc8bd; color: #8e3c12; }
+.pixel-workspace { background: #eeece6; }
+.pixel-workspace .lab-editor { background: #fffdf8; color: #262723; border-color: #d9d4ca; }
+.pixel-workspace .editor-bar { background: #faf8f3; border-color: #d9d4ca; flex-wrap: wrap; }
+.pixel-workspace .editor-bar > div:first-child { min-width: 0; flex: 1 1 140px; }
+.pixel-workspace .lab-menus, .pixel-workspace .history-controls { flex: 0 0 auto; }
+.pixel-workspace .tool-panel, .pixel-workspace .color-panel { min-width: 0; background: #f7f5ef; border-color: #d9d4ca; overflow-x: hidden; }
+.pixel-workspace .canvas-stage { background: #85847e; min-width: 0; }
+.pixel-workspace .panel-resizer, .pixel-workspace .panel-fixed-rail { background: #dedbd3; border-color: #cbc5b9; }
+.pixel-workspace .panel-resizer:hover, .pixel-workspace .panel-resizer:focus-visible { background: #e9aa74; outline-color: #a34714; }
+.pixel-workspace .tool-button.active, .pixel-workspace .lab-tabs button[aria-pressed=true], .pixel-workspace .layer-row.active { background: #f8e8d9; color: #8e3c12; border-color: #d6a27c; }
+.pixel-workspace .tool-button, .pixel-workspace .layer-row, .pixel-workspace .lab-tabs button { border-color: #d9d4ca; }
+.pixel-workspace .lab-menu summary, .pixel-workspace .history-controls button, .pixel-workspace .settings-section button, .pixel-workspace .shortcut-launcher { background: #fffdf8; color: #4b463e; border-color: #d2cabe; }
+.pixel-workspace .lab-menu:has(.download-button) summary { background: #a34714; color: white; border-color: #a34714; }
+.pixel-workspace .lab-menu .document-controls { background: #fffdf8; border-color: #d2cabe; }
+.pixel-workspace .settings-section h3 { color: #8e3c12; }
+.pixel-workspace input[type=checkbox], .pixel-workspace input[type=range] { accent-color: #a34714; }
+.simple-workspace-note { padding: 12px 0; display: grid; gap: 10px; font-size: 12px; }
+.simple-workspace-note h3, .simple-workspace-note p { margin: 0; line-height: 1.6; overflow-wrap: anywhere; }
+.simple-workspace-note > button { padding: 9px; border: 1px solid #cfc8bd; border-radius: 7px; cursor: pointer; background: #fffdf8; color: #544534; }
+html[data-theme=dark] .website-header { background: #242529; border-color: #414348; }
+html[data-theme=dark] .website-header .nav-link.active, html[data-theme=dark] .website-header .nav-link:hover { background: #49362b; color: #ffc99e; }
+html[data-theme=dark] .site-settings summary, html[data-theme=dark] .site-settings-content, html[data-theme=dark] .website-theme-toggle { background: #292b2f; color: #f1ede5; border-color: #535357; }
+html[data-theme=dark] .site-settings-content p { color: #c5c0b7; }
+.pixel-workspace .lab-editor[data-theme=dark], .pixel-workspace .lab-editor[data-theme=dark] .editor-bar { background: #242529; border-color: #414348; }
+.pixel-workspace .lab-editor[data-theme=dark] .tool-panel, .pixel-workspace .lab-editor[data-theme=dark] .color-panel { background: #292b2f; }
+.pixel-workspace .lab-editor[data-theme=dark] .canvas-stage { background: #161719; }
+.pixel-workspace .lab-editor[data-theme=dark] .lab-menu .document-controls, .pixel-workspace .lab-editor[data-theme=dark] .layer-row, .pixel-workspace .lab-editor[data-theme=dark] .lab-tabs button, .pixel-workspace .lab-editor[data-theme=dark] .simple-workspace-note > button { background: #303236; color: #f1ede5; border-color: #535357; }
+.pixel-workspace .lab-editor[data-theme=dark] .tool-button.active, .pixel-workspace .lab-editor[data-theme=dark] .lab-tabs button[aria-pressed=true], .pixel-workspace .lab-editor[data-theme=dark] .layer-row.active { background: #49362b; color: #ffc99e; border-color: #aa7752; }
+.pixel-workspace .lab-editor[data-theme=dark] .settings-section h3 { color: #ffc99e; }
+@media (max-width: 500px) {
+  .site-settings-content { position: fixed; right: 12px; top: 52px; }
+  .pixel-workspace .lab-menu .document-controls { width: min(290px, calc(100vw - 24px)); }
+  .pixel-workspace .settings-grid.document-controls { width: calc(100vw - 24px); }
+}

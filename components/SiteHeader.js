@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./ThemeProvider";
 import BrandLogo from "./BrandLogo";
+import SiteSettings from "./SiteSettings";
 
 export default function SiteHeader() {
   const pathname = usePathname();
@@ -14,6 +15,6 @@ export default function SiteHeader() {
       <Link className={`nav-link ${pathname.startsWith("/events") ? "active" : ""}`} aria-current={pathname.startsWith("/events") ? "page" : undefined} href="/events">Competitions</Link>
       <Link className="nav-link" href="/events#public-challenges">Public Challenges</Link>
     </nav>
-    <div className="website-actions"><ThemeToggle /></div>
+    <div className="website-actions"><SiteSettings /><ThemeToggle /></div>
   </header>;
 }

@@ -24,12 +24,7 @@ html[data-theme=dark] .policy-date { color: #c4b5d9; }
 .comet-mark img { display: block; width: 60px; height: 36px; }
 .brand-wordmark { font-size: 16px; letter-spacing: -.055em; }
 .brand-wordmark > span { color: #c44e13; }
-.brand-animation-toggle { flex: 0 0 32px; width: 32px; height: 36px; padding: 0; border: 0; border-radius: 7px; background: transparent; color: #665e72; cursor: pointer; font-size: 13px; }
-.brand-animation-toggle:hover { background: #f6e7d9; color: #9c3b0c; }
 html[data-theme=dark] .brand-wordmark > span { color: #ff9a4e; }
-html[data-theme=dark] .brand-animation-toggle { color: #c4b5d9; }
-html[data-theme=dark] .brand-animation-toggle:hover { background: #433125; color: #ffb575; }
-@media (prefers-reduced-motion: reduce) { .brand-animation-toggle { display: none; } }
 .website-header .nav-link { padding: 7px 10px; font-size: 12px; }
 .website-theme-toggle { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #cfc8d7; border-radius: 10px; background: white; color: #5b21b6; font-size: 20px; cursor: pointer; }
 .website-theme-toggle:focus-visible { outline: 2px solid #7c3aed; outline-offset: 2px; }
@@ -65,7 +60,6 @@ html[data-theme=dark] .error-notice { background: #4b2230; color: #fecdd3; }
   .website-actions { grid-column: 2; grid-row: 1; }
   .website-header nav { grid-column: 1 / -1; grid-row: 2; justify-content: center; }
   .website-brand { gap: 6px; }
-  .website-header .brand-animation-toggle { width: 44px; height: 44px; flex-basis: 44px; }
   .website-header .brand { font-size: 11px; }
   .website-header nav { gap: 0; }
   .website-header .nav-link { padding: 7px; font-size: 11px; }

@@ -11,7 +11,7 @@
 .lab-menu:has(.download-button) summary { background: #6d28d9; color: white; }
 .lab-menu .document-controls { position: absolute; top: calc(100% + 8px); right: 0; width: 290px; z-index: 20; padding: 14px; display: grid; gap: 12px; background: white; border: 1px solid #ded9e5; border-radius: 8px; box-shadow: 0 8px 30px #241b3530; }
 .lab-menu button { width: 100%; }
-.pixel-workspace .workspace { flex: 1; height: auto; min-height: 0; grid-template-columns: minmax(112px, min(var(--left-panel-width), 25vw)) 7px minmax(0, 1fr) 7px minmax(190px, min(var(--right-panel-width), 32vw)); }
+.pixel-workspace .workspace { flex: 1; height: auto; min-height: 0; grid-template-columns: var(--left-panel-width) 7px minmax(0, 1fr) 7px var(--right-panel-width); }
 .pixel-workspace .canvas-stage { position: relative; grid-template-rows: minmax(0, 1fr); padding: 6px; background: #77747e; }
 .panel-resizer { background: #e4e1e8; cursor: col-resize; touch-action: none; user-select: none; border-inline: 1px solid #d1cbdc; }
 .panel-resizer:hover, .panel-resizer:focus-visible { background: #a78bfa; outline: 2px solid #7c3aed; outline-offset: -2px; }
@@ -182,7 +182,7 @@
 .pixel-workspace.main-workspace { min-height: 460px; }
 .pixel-workspace.shared-editor { height: calc(100dvh + 160px); max-height: none; min-height: 800px; }
 .pixel-workspace.shared-editor:fullscreen { height: 100dvh; min-height: 0; width: 100%; margin: 0; }
-.pixel-workspace .lab-menu .document-controls { max-height: calc(100dvh - 130px); overflow-y: auto; }
+.pixel-workspace .lab-menu .document-controls { position: fixed; max-width: calc(100vw - 24px); max-height: calc(100dvh - 130px); overflow-y: auto; overscroll-behavior: contain; }
 .pixel-workspace .settings-grid.document-controls { width: min(530px, calc(100vw - 24px)); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .settings-section { display: grid; align-content: start; gap: 9px; padding: 2px; }
 .settings-section h3 { font-size: 11px; margin: 0; letter-spacing: .06em; text-transform: uppercase; color: #6d28d9; }

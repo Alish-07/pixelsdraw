@@ -27,11 +27,16 @@ test('comet assets are self-contained and static alternatives contain no animati
 
 test('brand animation has a user-controlled static fallback', async () => {
   const logo = await source('components/BrandLogo.js');
-  assert.match(logo, /aria-pressed=\{paused\}/);
-  assert.match(logo, /Pause logo animation/);
-  assert.match(logo, /Play logo animation/);
+  const preferences = await source('components/StudioPreferences.js');
+  const editor = await source('components/PixelCanvas.js');
+  const settings = await source('components/SiteSettings.js');
+  assert.doesNotMatch(logo, /<button|Pause logo animation|Play logo animation/);
+  assert.match(logo, /useStudioPreferences/);
   assert.match(logo, /prefers-reduced-motion: reduce/);
-  assert.match(logo, /paused \? "\/brand\/pixel-comet-static.svg"/);
+  assert.match(logo, /animateLogo \? "\/brand\/pixel-comet-animated.svg" : "\/brand\/pixel-comet-static.svg"/);
+  assert.match(preferences, /Animate website logo/);
+  assert.match(editor, /<LogoAnimationSetting/);
+  assert.match(settings, /<LogoAnimationSetting/);
 });
 
 test('legacy mobile styles do not hide the brand wordmark', async () => {

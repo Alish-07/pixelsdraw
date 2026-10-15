@@ -5,6 +5,8 @@ import { editorDraftKeys, readLabDraft, saveLabDraft } from "@/lib/editor-lab-st
 import { applyPalette, GIFEncoder, quantize } from "gifenc";
 import { allowsCanvas, canvasRules, describeCanvas, validateCompetitionArtwork } from "@/lib/competition-rules.mjs";
 import { useTheme } from "./ThemeProvider";
+import { LogoAnimationSetting, useStudioPreferences } from "./StudioPreferences";
+import { editorMenuPosition, workspacePanels } from "@/lib/studio-preferences.mjs";
 import { savedFrameRate } from "@/lib/site-ui.mjs";
 import { brushFootprints, ditherAccept, invertColor, rasterBytes, reorderLayers, nextLayerName, panelWidth, placeFloating, pointerPixel, renumberLayers, transformClip, zoomScale } from "@/lib/editor-lab.mjs";
 import {
@@ -118,6 +120,8 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
   const animationDisabled = competition && (competition.animation_mode || "disabled") === "disabled";
   const { primary: draftKey, legacy: legacyKey, labFallback } = editorDraftKeys(competition?.id, storageScope);
   const { theme, preference, setPreference } = useTheme();
+  const { workspaceMode, updatePreferences } = useStudioPreferences();
+  const advancedWorkspace = workspaceMode === "advanced";
   const initial = starterDocument(defaultSize);
   const [width, setWidth] = useState(initial.width);
   const [height, setHeight] = useState(initial.height);
@@ -194,14 +198,27 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
   const gridRef = useRef(null);
   const shapeStart = useRef(null);
 
+  useEffect(() => {
+    const workspace = workspaceRef.current;
+    if (!workspace) return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (!window.matchMedia("(min-width: 801px)").matches) return;
+      const next = workspacePanels(leftWidth, rightWidth, entry.contentRect.width);
+      if (next.left !== leftWidth) setLeftWidth(next.left);
+      if (next.right !== rightWidth) setRightWidth(next.right);
+    });
+    observer.observe(workspace);
+    return () => observer.disconnect();
+  }, [leftWidth, rightWidth]);
+
   const currentFrame = frames[activeFrame];
   const currentLayer = currentFrame?.layers[activeLayer];
   const displayLayers = useMemo(() => {
     if (!currentFrame) return [];
-    if (!onionSkin || activeFrame === 0) return currentFrame.layers;
+    if (!advancedWorkspace || !onionSkin || activeFrame === 0) return currentFrame.layers;
     const previous = frames[activeFrame - 1].layers.map((layer) => ({ ...layer, opacity: layer.opacity * 0.22 }));
     return [...previous, ...currentFrame.layers];
-  }, [activeFrame, currentFrame, frames, onionSkin]);
+  }, [activeFrame, currentFrame, frames, onionSkin, advancedWorkspace]);
 
 
   useEffect(() => {
@@ -304,10 +321,10 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
   }, [activeFrame, activeLayer, draftKey, frames, fps, height, loaded, palette, width, artworkTitle, leftWidth, rightWidth, resizablePanels, showCoordinates, eraserPreview, autoCloseMenus, showGrid, checkerA, checkerB, backgroundMode, brushSize, pencilSize, eraserSize, universalSize, helpEnabled]);
 
   useEffect(() => {
-    if (!playing || frames.length < 2) return;
+    if (!playing || !advancedWorkspace || frames.length < 2) return;
     const timer = window.setInterval(() => setPreviewFrame((index) => (index + 1) % frames.length), 1000 / fps);
     return () => window.clearInterval(timer);
-  }, [fps, frames.length, playing]);
+  }, [fps, frames.length, playing, advancedWorkspace]);
 
   useEffect(() => {
     function dismiss(event) {
@@ -317,9 +334,11 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
     }
     document.addEventListener("pointerdown", dismiss);
     document.addEventListener("keydown", dismiss);
+    window.addEventListener("resize", dismiss);
     return () => {
       document.removeEventListener("pointerdown", dismiss);
       document.removeEventListener("keydown", dismiss);
+      window.removeEventListener("resize", dismiss);
       clearTimeout(menuTimer.current);
       clearTimeout(fadeTimer.current);
       clearTimeout(hintTimer.current);
@@ -338,7 +357,14 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
     return {
       name: "editor-lab-menu",
       onToggle: (event) => {
-        if (event.currentTarget.open) menusRef.current?.querySelectorAll("details").forEach((menu) => {
+        if (!event.currentTarget.open) return;
+        const popup = event.currentTarget.querySelector(".document-controls");
+        if (popup) {
+          const bounds = popup.getBoundingClientRect();
+          const position = editorMenuPosition(event.currentTarget.getBoundingClientRect(), bounds.width, bounds.height, window.innerWidth, window.innerHeight);
+          Object.assign(popup.style, { left: `${position.left}px`, top: `${position.top}px`, right: "auto", maxHeight: `${position.maxHeight}px` });
+        }
+        menusRef.current?.querySelectorAll("details").forEach((menu) => {
           if (menu !== event.currentTarget) menu.open = false;
         });
       },
@@ -489,6 +515,7 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
 
   function resetViewPreferences() {
     resetLayout();
+    updatePreferences({ workspaceMode: "simple" });
     setResizablePanels(true);
     setShowCoordinates(true);
     setEraserPreview(true);
@@ -580,6 +607,7 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
       }}
       onPointerUp={() => { panelDrag.current = null; }}
       onPointerCancel={() => { panelDrag.current = null; }}
+      onLostPointerCapture={() => { panelDrag.current = null; }}
     />;
   }
 
@@ -991,11 +1019,11 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
     }
   }
 
-  const preview = frames[playing ? Math.min(previewFrame, frames.length - 1) : activeFrame];
+  const preview = frames[playing && advancedWorkspace ? Math.min(previewFrame, frames.length - 1) : activeFrame];
   const availablePresets = competition && rules.mode !== "range" ? rules.sizes.map((size) => [size, size]) : PRESETS.filter(([w, h]) => !competition || allowsCanvas(rules, w, h));
   const presetValue = availablePresets.some(([w, h]) => w === width && h === height) ? `${width}x${height}` : "custom";
 
-  return <section className="editor advanced-editor lab-editor" data-theme={theme} style={{ "--checker-a": checkerA, "--checker-b": checkerB }} aria-label="Pixel art editor">
+  return <section className="editor advanced-editor lab-editor" data-theme={theme} data-workspace={workspaceMode} style={{ "--checker-a": checkerA, "--checker-b": checkerB }} aria-label="Pixel art editor">
     <div className="editor-bar">
       <div>{editingTitle ? <input className="artwork-title-input" aria-label="Artwork title" autoFocus maxLength={80} defaultValue={artworkTitle}
         onBlur={(event) => { setArtworkTitle(event.target.value.trim() || "Untitled artwork"); setEditingTitle(false); }}
@@ -1025,12 +1053,15 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
       {frames.length > 1 && <button type="button" className="download-button gif-button" onClick={() => { downloadGif(); closeMenus(); }}>Animated GIF</button>}</fieldset></details>
         <details className="lab-menu settings-menu view-menu" {...menuProps()}><summary>Settings ▾</summary><fieldset className="document-controls settings-grid" disabled={!loaded}>
           <section className="settings-section"><h3>Appearance</h3>
+            <LogoAnimationSetting />
             <label>Website appearance<select aria-label="Website appearance" value={preference} onChange={(event) => setPreference(event.target.value)}><option value="system">Follow device</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
             <label>Canvas background<select value={backgroundMode} onChange={(event) => setBackgroundMode(event.target.value)}><option value="checker">Checkerboard</option><option value="solid">Solid color</option></select></label>
             <div className="background-colors"><label>Color A<input type="color" value={checkerA} onChange={(event) => setCheckerA(event.target.value)} /></label>{backgroundMode === "checker" && <label>Color B<input type="color" value={checkerB} onChange={(event) => setCheckerB(event.target.value)} /></label>}</div>
             <small>Canvas background is display-only. Transparency stays intact on export.</small>
           </section>
           <section className="settings-section"><h3>Workspace</h3>
+            <label>Workspace mode<select aria-label="Workspace mode" value={workspaceMode} onChange={event => updatePreferences({ workspaceMode: event.target.value })}><option value="simple">Simple</option><option value="advanced">Advanced</option></select></label>
+            <small>Advanced shows layers, frames and transforms. Switching modes never deletes artwork.</small>
             <label className="compact-control">Canvas zoom<select value={zoom} onChange={(event) => setZoom(Number(event.target.value))}><option value="0">Fit</option>{zoom > 0 && ![1, 2, 4, 8, 16, 32].includes(zoom) && <option value={zoom}>{Math.round(zoom * 100)}%</option>}{[1, 2, 4, 8, 16, 32].map((scale) => <option value={scale} key={scale}>{scale}×</option>)}</select></label>
             <label className="help-setting"><input type="checkbox" checked={resizablePanels} onChange={(event) => setResizablePanels(event.target.checked)} /> Resizable side panels</label>
             <small>Off keeps the current panel widths fixed.</small>
@@ -1080,7 +1111,7 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
         <button type="button" className="grid-toggle" onClick={() => setMirrorX((value) => !value)} aria-pressed={mirrorX}><span>↔</span> Mirror X<span className={`switch ${mirrorX ? "on" : ""}`} /></button>
         <button type="button" className="grid-toggle" onClick={() => setMirrorY((value) => !value)} aria-pressed={mirrorY}><span>↕</span> Mirror Y<span className={`switch ${mirrorY ? "on" : ""}`} /></button>
         <button type="button" className="grid-toggle" onClick={() => setShowGrid((value) => !value)} aria-pressed={showGrid}><span className="mini-grid" /> Grid<span className={`switch ${showGrid ? "on" : ""}`} /></button>
-        <button type="button" className="grid-toggle" onClick={() => setOnionSkin((value) => !value)} aria-pressed={onionSkin} disabled={activeFrame === 0}><span>◫</span> Onion skin<span className={`switch ${onionSkin ? "on" : ""}`} /></button>
+        {advancedWorkspace && <button type="button" className="grid-toggle" onClick={() => setOnionSkin((value) => !value)} aria-pressed={onionSkin} disabled={activeFrame === 0}><span>◫</span> Onion skin<span className={`switch ${onionSkin ? "on" : ""}`} /></button>}
         <button type="button" className="shortcut-launcher" onClick={() => shortcutsRef.current.showModal()}>⌨ Shortcuts</button>
       </aside>
 
@@ -1123,16 +1154,25 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
           <button type="button" onClick={() => { setPalette((items) => items.map((color, index) => index === editingSlot ? null : color)); setEditingSlot(null); }}>Empty slot</button>
         </div>}
         <div className="panel-divider" />
-<section className="transform-panel" aria-label="Transforms"><p className="panel-title">Transform tools</p><small className="transform-caption">Selection or active layer</small>
+{advancedWorkspace && <section className="transform-panel" aria-label="Transforms"><p className="panel-title">Transform tools</p><small className="transform-caption">Selection or active layer</small>
         <div className="transform-actions" aria-label="Transform selection or active layer">
           <button type="button" aria-label="Flip horizontally" data-tooltip="Flip horizontally" {...helpProps("Flip horizontally", "Mirror the selection or entire active layer from left to right.")} onClick={() => transformArtwork("flipX")}>↔</button>
           <button type="button" aria-label="Flip vertically" data-tooltip="Flip vertically" {...helpProps("Flip vertically", "Mirror the selection or entire active layer from top to bottom.")} onClick={() => transformArtwork("flipY")}>↕</button>
           <button type="button" aria-label="Rotate clockwise" data-tooltip="Rotate 90°" {...helpProps("Rotate clockwise", "Rotate the selection or active layer 90°. If it will not fit, resize first; pixels are never silently cropped.")} onClick={() => transformArtwork("rotate")}>⟳</button>
           <button type="button" aria-label="Invert colors" data-tooltip="Invert colors" {...helpProps("Invert colors", "Swap each painted color with its RGB opposite in the selection or active layer. Transparent pixels stay transparent.")} onClick={invertArtwork}>◐</button>
         </div>
-</section>
-        <div className="lab-tabs" role="group" aria-label="Sidebar panel"><button type="button" aria-pressed={panel === "layers"} onClick={() => setPanel("layers")}>Layers</button><button type="button" aria-pressed={panel === "animation"} disabled={animationDisabled} onClick={() => setPanel("animation")}>Animation</button></div>
-        {panel === "animation" && <section className="compact-frame-workspace" aria-label="Animation frames">
+</section>}
+        {!advancedWorkspace && <section className="simple-workspace-note" aria-label="Simple workspace">
+          <h3>Simple workspace</h3><p>Editing frame {activeFrame + 1} · {currentLayer.name}</p>
+          {currentLayer.locked && <p>This layer is locked. Open advanced controls to unlock it.</p>}
+          {!currentLayer.visible && <p>This layer is hidden. Open advanced controls to show it.</p>}
+          {competition?.animation_mode === "required" && <p>This challenge requires animation. Open advanced controls to add frames.</p>}
+          {(frames.length > 1 || currentFrame.layers.length > 1) && <p>Your frames and layers are preserved.</p>}
+          <button type="button" onClick={() => updatePreferences({ workspaceMode: "advanced" })}>Show advanced controls</button>
+          <button type="button" className="clear-button" disabled={currentLayer.locked} onClick={clearLayer}>Clear active layer</button>
+        </section>}
+        {advancedWorkspace && <div className="lab-tabs" role="group" aria-label="Sidebar panel"><button type="button" aria-pressed={panel === "layers"} onClick={() => setPanel("layers")}>Layers</button><button type="button" aria-pressed={panel === "animation"} disabled={animationDisabled} onClick={() => setPanel("animation")}>Animation</button></div>}
+        {advancedWorkspace && panel === "animation" && <section className="compact-frame-workspace" aria-label="Animation frames">
           <div className="frames-heading"><div><p className="panel-title">Frames</p><span>{frames.length}</span></div><label>FPS<select value={fps} onChange={(event) => setFps(Number(event.target.value))}>{[2, 4, 6, 8, 12, 16, 24].map((value) => <option key={value}>{value}</option>)}</select></label></div>
           <div className="frame-quick-actions"><button type="button" onClick={() => addFrame(false)} disabled={animationDisabled} title="Add blank frame">＋</button><button type="button" onClick={() => addFrame(true)} disabled={animationDisabled} title="Duplicate frame">Duplicate</button><button type="button" onClick={() => moveFrame(-1)} disabled={activeFrame === 0} title="Move frame left">←</button><button type="button" onClick={() => moveFrame(1)} disabled={activeFrame === frames.length - 1} title="Move frame right">→</button><button type="button" onClick={deleteFrame} disabled={frames.length === 1} title="Delete frame">Delete</button><button type="button" onClick={() => { setPlaying((value) => !value); setPreviewFrame(activeFrame); }}>{playing ? "Pause" : "Play"}</button></div>
           <div className="frame-strip">{frames.map((frame, index) => <button type="button" key={frame.id} className={activeFrame === index ? "active" : ""} onClick={() => { setActiveFrame(index); setActiveLayer(0); setPreviewFrame(index); commitSelection(); }}>
@@ -1140,7 +1180,7 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
           <div className="animation-preview"><FramePreview frame={preview} width={width} height={height} label="Animation preview" /><span>{playing ? `${fps} FPS` : "Preview"}</span></div>
         </section>}
         <div className="panel-divider" />
-        <section hidden={panel !== "layers"} aria-label="Layers in current frame"><p className="lab-help">Stacked artwork · Frame {activeFrame + 1}</p>
+        <section hidden={!advancedWorkspace || panel !== "layers"} aria-label="Layers in current frame"><p className="lab-help">Stacked artwork · Frame {activeFrame + 1}</p>
         <div className="layers-heading"><p className="panel-title">Layers</p><button type="button" onClick={addLayer} title="Add layer">＋</button></div>
         <div className="layer-list">{[...currentFrame.layers].reverse().map((layer, reverseIndex) => {
           const index = currentFrame.layers.length - 1 - reverseIndex;
