@@ -34,6 +34,10 @@ test('brand animation has a user-controlled static fallback', async () => {
   assert.match(logo, /paused \? "\/brand\/pixel-comet-static.svg"/);
 });
 
+test('legacy mobile styles do not hide the brand wordmark', async () => {
+  assert.doesNotMatch(await source('app/globals.css'), /\.brand\s*>\s*span:last-child\s*\{\s*display:\s*none/);
+});
+
 test('public-facing names and metadata no longer use the old brand', async () => {
   for (const path of [
     'components/SiteHeader.js', 'components/SiteFooter.js', 'components/PolicyPage.js',

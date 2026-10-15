@@ -670,7 +670,6 @@ kbd {
 }
 
 @media (max-width: 480px) {
-  .brand > span:last-child { display: none; }
   .join-card button { width: 100%; }
   .event-list a { grid-template-columns: 1fr; }
   .event-list a > span:last-child { grid-column: 1; }
