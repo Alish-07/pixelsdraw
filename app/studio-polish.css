@@ -40,6 +40,18 @@ html[data-theme=dark] .site-settings-content p { color: #c5c0b7; }
 .pixel-workspace .lab-editor[data-theme=dark] .lab-menu .document-controls, .pixel-workspace .lab-editor[data-theme=dark] .layer-row, .pixel-workspace .lab-editor[data-theme=dark] .lab-tabs button, .pixel-workspace .lab-editor[data-theme=dark] .simple-workspace-note > button { background: #303236; color: #f1ede5; border-color: #535357; }
 .pixel-workspace .lab-editor[data-theme=dark] .tool-button.active, .pixel-workspace .lab-editor[data-theme=dark] .lab-tabs button[aria-pressed=true], .pixel-workspace .lab-editor[data-theme=dark] .layer-row.active { background: #49362b; color: #ffc99e; border-color: #aa7752; }
 .pixel-workspace .lab-editor[data-theme=dark] .settings-section h3 { color: #ffc99e; }
+.pixel-workspace .lab-editor :is(.selection-actions button, .transform-actions button, .layer-actions button, .layers-heading button, .frame-quick-actions button, .document-controls select, .compact-control select, .settings-section button) { background: #fffdf8; color: #4b463e; border-color: #d2cabe; }
+.pixel-workspace .lab-editor .transform-panel { background: #f1ede5; border-color: #d2cabe; }
+.pixel-workspace .lab-editor .status-bar { background: #faf8f3; border-color: #d9d4ca; }
+.pixel-workspace .lab-editor .status-bar strong, .pixel-workspace .lab-editor .layer-visibility { color: #a34714; }
+.pixel-workspace .lab-editor .switch.on { background: #a34714; }
+.pixel-workspace .lab-editor .frame-strip button.active { border-color: #a34714; box-shadow: 0 0 0 2px #e9c6a7; }
+.pixel-workspace .lab-editor[data-theme=dark] :is(.lab-menu summary, .history-controls button, .selection-actions button, .transform-actions button, .layer-actions button, .layers-heading button, .frame-quick-actions button, .document-controls select, .compact-control select, .settings-section button, .shortcut-launcher, .animation-preview, .frame-strip button, .transform-panel, .status-bar) { background: #303236; color: #f1ede5; border-color: #535357; }
+.pixel-workspace .lab-editor[data-theme=dark] .lab-menu:has(.download-button) summary { background: #a34714; color: white; border-color: #b86c3f; }
+.pixel-workspace .lab-editor[data-theme=dark] :is(.lab-menu small, .transform-caption, .panel-title, .compact-control, .canvas-details, .lab-help, .document-size) { color: #c5c0b7; }
+.pixel-workspace .lab-editor[data-theme=dark] :is(.status-bar strong, .layer-visibility) { color: #ffc99e; }
+.pixel-workspace .lab-editor[data-theme=dark] :is(.panel-resizer, .panel-fixed-rail) { background: #414348; border-color: #535357; }
+.pixel-workspace .lab-editor[data-theme=dark] .tool-button:hover { background: #414348; }
 @media (max-width: 500px) {
   .site-settings-content { position: fixed; right: 12px; top: 52px; }
   .pixel-workspace .lab-menu .document-controls { width: min(290px, calc(100vw - 24px)); }
