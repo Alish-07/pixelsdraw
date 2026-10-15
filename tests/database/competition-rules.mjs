@@ -155,6 +155,24 @@ let publicRounds = await rpc('pixel_public_challenges',[]);
 assert.equal(publicRounds.filter(x=>x.challenge_key==='sprint').length,1);
 assert.equal(publicRounds.filter(x=>x.challenge_key==='daily').length,1);
 assert.deepEqual((await rpc('pixel_public_challenges',[])).map(x=>x.id),publicRounds.map(x=>x.id));
+const longRound = publicRounds.find(x=>x.challenge_key==='daily');
+assert.equal(Date.parse(longRound.submission_deadline)-Date.parse(longRound.round_start),21600*1000);
+assert.equal(Date.parse(longRound.next_round_at)-Date.parse(longRound.submission_deadline),1800*1000);
+// Simulate a daily round already running when the new lane configuration arrives.
+await db.exec('alter table public.pixel_events disable trigger pixel_public_round_protected; alter table public.pixel_events disable trigger pixel_voting_timer;');
+await db.query("update public.pixel_events set round_start=round_start-interval '24 hours',phase='submissions',submission_duration_seconds=82800,voting_duration_seconds=3600,submission_deadline=now()+interval '1 hour',voting_deadline=null where id=$1",[longRound.id]);
+await db.exec('alter table public.pixel_events enable trigger pixel_public_round_protected; alter table public.pixel_events enable trigger pixel_voting_timer;');
+assert.equal((await rpc('pixel_public_challenges',[])).filter(x=>x.challenge_key==='daily').length,1,'old drawing/voting windows must finish before the new schedule starts');
+await db.exec('alter table public.pixel_events disable trigger pixel_public_round_protected; alter table public.pixel_events disable trigger pixel_voting_timer;');
+await db.query("update public.pixel_events set phase='voting',submission_deadline=now()-interval '30 minutes',voting_deadline=now()+interval '30 minutes' where id=$1",[longRound.id]);
+await db.exec('alter table public.pixel_events enable trigger pixel_public_round_protected; alter table public.pixel_events enable trigger pixel_voting_timer;');
+assert.equal((await rpc('pixel_public_challenges',[])).filter(x=>x.challenge_key==='daily').length,1,'old voting windows must not be cut short');
+await db.exec('alter table public.pixel_events disable trigger pixel_public_round_protected; alter table public.pixel_events disable trigger pixel_voting_timer;');
+await db.query("update public.pixel_events set phase='results' where id=$1",[longRound.id]);
+await db.exec('alter table public.pixel_events enable trigger pixel_public_round_protected; alter table public.pixel_events enable trigger pixel_voting_timer;');
+const nextLongRound=(await rpc('pixel_public_challenges',[])).find(x=>x.challenge_key==='daily' && x.id!==longRound.id);
+assert.ok(nextLongRound);
+assert.equal(Date.parse(nextLongRound.next_round_at)-Date.parse(nextLongRound.round_start),23400*1000);
 // A deterministic owner fixture opens the sprint now, irrespective of test time.
 const sprint = publicRounds.find(x=>x.challenge_key==='sprint');
 await db.exec('alter table public.pixel_events disable trigger pixel_public_round_protected; alter table public.pixel_events disable trigger pixel_voting_timer;');

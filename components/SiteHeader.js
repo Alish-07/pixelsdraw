@@ -13,7 +13,6 @@ export default function SiteHeader() {
     <nav aria-label="Main navigation">
       <Link className={`nav-link ${pathname === "/" ? "active" : ""}`} aria-current={pathname === "/" ? "page" : undefined} href="/">Studio</Link>
       <Link className={`nav-link ${pathname.startsWith("/events") ? "active" : ""}`} aria-current={pathname.startsWith("/events") ? "page" : undefined} href="/events">Competitions</Link>
-      <Link className="nav-link" href="/events#public-challenges">Public Challenges</Link>
     </nav>
     <div className="website-actions"><ThemeToggle /><ProfileMenu /></div>
   </header>;

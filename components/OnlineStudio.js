@@ -112,7 +112,8 @@ function Ballot({ client, event, user, onSaved, isHost, votingClosed = false }) 
   </form>;
 }
 
-export default function OnlineStudio({ eventId = null }) {
+export default function OnlineStudio({ eventId = null, initialHosting = false }) {
+  const hosting = initialHosting;
   const router = useRouter();
   const [client] = useState(getSupabase);
   const [user, setUser] = useState(null);
@@ -441,7 +442,7 @@ export default function OnlineStudio({ eventId = null }) {
     catch { setMessage(`Could not copy automatically. Use: ${value}`); }
   }
 
-  if (!client) return <main id="main-content" tabIndex={-1} className="page-shell competition-page"><section className="competition unavailable-card">
+  if (!client && eventId) return <main id="main-content" tabIndex={-1} className="page-shell competition-page"><section className="competition unavailable-card">
     <p className="eyebrow">We&apos;ll be back soon</p><h2>Competitions are taking a short break.</h2>
     <p>You can still create pixel art in the studio. Please try competitions again later.</p>
     <Link className="primary-button button-link" href="/">Open studio</Link>
@@ -456,27 +457,24 @@ export default function OnlineStudio({ eventId = null }) {
   return <main id="main-content" tabIndex={-1} className="page-shell competition-page">
 
     {!eventId ? <>
-      <PublicChallenges client={client} />
-      {user && moderator === user.id && <><button className="secondary-button" aria-expanded={moderatorPanel} onClick={() => setModeratorPanel(!moderatorPanel)}>{moderatorPanel ? "Close moderation" : "Review public reports"}</button>{moderatorPanel && <ModerationPanel key={user.id} client={client} />}</>}
-      <section className="competition-hero">
-        <p className="eyebrow">Play with friends</p><h2>Got a room code?</h2>
-        <p>Join your group&apos;s competition and bring the theme to life.</p>
+      {!hosting ? <><section className="competition-hero competition-lobby-hero">
+        <div className="lobby-heading"><div><p className="eyebrow">Create together</p><h1>Got a room code?</h1>
+        <p>A theme, a few pixels, and a little friendly competition.</p></div>
+        <Link className="secondary-button host-launch" href="/events?host=1">Host competition <span aria-hidden="true">→</span></Link></div>
         <form className="join-card" onSubmit={joinCompetition}>
-          <div className="join-fields"><label htmlFor="join-code">Competition code
+          <fieldset disabled={busy || !client}><div className="join-fields"><label htmlFor="join-code">Room code
             <input id="join-code" name="joinCode" inputMode="numeric" autoComplete="off" required maxLength={8} placeholder="123 456" aria-describedby="join-help" /></label>
             <SuggestedField name="nickname" label="Nickname" kind="nickname" maxLength={60} autoComplete="nickname" />
-            <button className="primary-button" disabled={busy}>{busy ? "Finding…" : "Join"}</button></div>
-          <p id="join-help" role="status">{joinMessage || "No email or account needed to participate."}</p>
+            <button className="primary-button">{busy ? "Finding…" : "Join room"}</button></div></fieldset>
+          <p id="join-help" role="status">{joinMessage || (!client ? "Joining rooms is temporarily unavailable. Your studio drawings are still available." : "Join with a nickname. No account needed.")}</p>
         </form>
-      </section>
-
-      <section className="host-area">
-        <div className="section-heading"><div><p className="eyebrow">For hosts</p><h2>Run your own challenge</h2></div>
-          <p>Pick a theme, invite your friends, and see what they create.</p></div>
-        <AccountPanel client={client} user={user} ready={authReady} />
+      </section><PublicChallenges client={client} /></> : <section className="host-area host-setup">
+        <Link className="back-link" href="/events">← Back to competitions</Link>
+        <div className="section-heading"><div><p className="eyebrow">Your room, your rules</p><h1>Host a competition</h1><p>Choose a theme, set the rules, and invite your players.</p></div></div>
+        {!hostUser && (client ? <AccountPanel client={client} user={user} ready={authReady} /> : <p role="status">Hosting is temporarily unavailable. Please try again later.</p>)}
         {message && <p role="status" className="local-notice">{message}</p>}
         {loadError && <p role="alert" className="error-notice">{loadError}</p>}
-        {hostUser ? <div className="host-grid">
+        {hostUser ? <div>
           <form className="competition-form create-event-card" onSubmit={createEvent}>
             <p className="eyebrow">New competition</p><h3>Choose the challenge</h3>
             <fieldset className="ballot-fields" disabled={busy}>
@@ -486,7 +484,11 @@ export default function OnlineStudio({ eventId = null }) {
               <button className="primary-button">{busy ? "Creating…" : "Create competition"}</button>
             </fieldset>
           </form>
-          <div className="your-events">
+        </div> : null}
+      </section>}
+      {!hosting && message && <p role="status" className="local-notice">{message}</p>}
+      {!hosting && loadError && <p role="alert" className="error-notice">{loadError}</p>}
+      {!hosting && hostUser && <section className="host-area hosted-rooms"><div className="your-events">
             <p className="eyebrow">Your rooms</p><h3>Competitions you host</h3>
             <div className="history-tabs" role="group" aria-label="Competition history">{[["current", "Current"], ["past", "Past"], ["trash", "Deleted"]].map(([id, label]) => <button key={id} type="button" aria-pressed={historyTab === id} onClick={() => setHistoryTab(id)}>{label}</button>)}</div>
             <p className="host-hint">{historyTab === "current" ? "Your recent, open competitions." : historyTab === "past" ? "Revisit finished competitions and older rooms." : "Restore a room to make it available again."}</p>
@@ -496,8 +498,8 @@ export default function OnlineStudio({ eventId = null }) {
             </div>)}{!events.some((item) => roomCategory(item, now) === historyTab) && <p className="empty-state">No competitions in this section.</p>}</div>}
             <dialog ref={deleteDialog} className="room-delete-dialog"><h3>Delete {deleteTarget?.title}?</h3><p>Participants will lose access to the room and its code. Artwork and votes are preserved; restore it from Deleted.</p><div><button onClick={() => deleteDialog.current.close()}>Cancel</button><button disabled={busy} onClick={() => setDeleted(deleteTarget, true)}>Delete competition</button></div><p role="status">{message}</p></dialog>
           </div>
-        </div> : null}
-      </section>
+      </section>}
+      {!hosting && user && moderator === user.id && <section className="lobby-moderation" aria-labelledby="lobby-moderation-heading"><div className="section-heading"><div><p className="eyebrow">Admin workspace</p><h2 id="lobby-moderation-heading">Moderation</h2><p>Review reports and keep public galleries welcoming.</p></div><button className="secondary-button" aria-controls="public-report-queue" aria-expanded={moderatorPanel} onClick={() => setModeratorPanel(!moderatorPanel)}>{moderatorPanel ? "Close reports" : "Review public reports"}</button></div>{moderatorPanel && <div id="public-report-queue"><ModerationPanel key={user.id} client={client} /></div>}</section>}
     </> : !loaded ? <section className="event-loading"><p>Opening competition…</p></section> : !event ?
       <section className="competition unavailable-card"><h2>{loadError ? "Competition unavailable" : "Competition not found"}</h2>
         <p>{loadError || "Check the link or return to the competition lobby."}</p><Link href="/events">← Back to competitions</Link></section> : <>

@@ -47,6 +47,24 @@ describes repository connection, previews and production-branch deployments.
 
 ## Domain and authentication
 
+### Competition lobby and six-hour schedule release
+
+Apply `supabase/migrations/202610150001_six_hour_challenges.sql` to the test database
+first. It changes the long-form lane to six hours of drawing plus 30 minutes of
+voting. The stable `daily` database key is retained for existing links and history.
+Already-running daily rounds finish on their original deadlines before the new
+schedule takes over; no artwork or ballots are deleted.
+
+Before merging this release to `main`, apply the reviewed migration to the hosted
+database and verify a new long-form round's stored durations are 21600 and 1800
+seconds. Exercise `/events` → Host competition → Google/email sign-in → room setup
+→ dashboard on a configured test deployment. Sign-in must return to
+`/events?host=1`. Check the admin-only Moderation section with a confirmed reviewer
+and verify regular accounts cannot read the report queue. A preview without
+Supabase variables can verify layout but cannot complete these account/room checks.
+
+### Custom hostname
+
 Once purchased, add the exact hostname in Vercel's Domains settings and copy the
 DNS records it provides into Cloudflare. Preserve unrelated DNS/email records.
 Set `NEXT_PUBLIC_SITE_URL` to the final HTTPS origin and redeploy. Keep

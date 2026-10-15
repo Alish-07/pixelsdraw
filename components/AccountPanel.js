@@ -29,7 +29,7 @@ export default function AccountPanel({ client, user, ready, publicChallenge = fa
       const { error } = await client.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: window.location.origin + window.location.pathname,
+          redirectTo: window.location.origin + window.location.pathname + window.location.search,
         },
       });
       if (error) throw error;
@@ -53,7 +53,7 @@ export default function AccountPanel({ client, user, ready, publicChallenge = fa
       }
       const { error } = await client.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: window.location.origin + window.location.pathname },
+        options: { emailRedirectTo: window.location.origin + window.location.pathname + window.location.search },
       });
       if (error) throw error;
       setEmailWait(60);

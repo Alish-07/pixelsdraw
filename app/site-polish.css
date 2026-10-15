@@ -53,4 +53,40 @@ html[data-theme] .drawings-page .history-tabs button[aria-pressed=true] { backgr
 .library-save-message a { color: var(--site-accent-text); }
 .library-save-message button { margin-left: auto; border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 20px; }
 .pixel-workspace .lab-editor[data-theme=dark] :is(.simple-workspace-note, .color-control) { color: #f1ede5; }
+html[data-theme] .competition-page { --event-purple: var(--site-accent-text); --event-ink: var(--site-text); }
+html[data-theme] .competition-lobby-hero { min-height: 0; display: block; margin: 12px auto 32px; padding: clamp(20px, 4vw, 40px); border: 1px solid var(--site-border); border-radius: 16px; background: var(--site-surface); color: var(--site-text); text-align: left; }
+.competition-lobby-hero::after { display: none; }
+.lobby-heading { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 24px; }
+.competition-lobby-hero h1, .host-setup h1 { margin: 8px 0 12px; font-size: clamp(30px, 5vw, 48px); letter-spacing: -.04em; }
+.lobby-heading p { line-height: 1.6; margin-block: 8px; }
+html[data-theme] .competition-lobby-hero .eyebrow { color: var(--site-accent-text); }
+html[data-theme] .competition-page .host-launch { white-space: nowrap; display: inline-flex; gap: 20px; align-items: center; text-decoration: none; background: var(--site-selected); color: var(--site-accent-text); }
+.competition-lobby-hero .join-card { width: 100%; padding: 0; box-shadow: none; border: 0; }
+.competition-lobby-hero .join-card fieldset { margin: 0; padding: 0; border: 0; }
+.competition-lobby-hero .join-card .join-fields { grid-template-columns: 1fr 1fr auto; align-items: start; }
+.competition-lobby-hero .join-card label { margin: 0; display: grid; gap: 6px; }
+.competition-lobby-hero .join-fields > .primary-button { margin-top: 25px; min-height: 51px; }
+html[data-theme] .competition-page .join-card input:focus { border-color: var(--site-accent); outline: 2px solid var(--site-accent-text); outline-offset: 2px; }
+html[data-theme] .competition-page :is(.public-challenges, .hosted-rooms, .lobby-moderation) { max-width: 1120px; margin: 0 auto 32px; padding: clamp(20px, 4vw, 32px); border: 1px solid var(--site-border); border-radius: 16px; background: var(--site-surface); color: var(--site-text); box-shadow: none; }
+.public-challenges .section-heading { align-items: center; gap: 16px; margin-bottom: 12px; }
+.public-challenges .section-heading h2, .lobby-moderation h2 { font-size: clamp(24px, 3vw, 32px); }
+.public-challenges .history-tabs { margin: 0; flex: 0 0 auto; }
+.host-setup { margin-top: 12px; max-width: 800px; box-shadow: none; }
+.host-setup .back-link { display: inline-block; margin-bottom: 20px; }
+.host-setup .create-event-card { border: 0; padding: 0; }
+.host-setup .competition-form { margin: 0; }
+.lobby-moderation .section-heading { margin-bottom: 0; align-items: center; flex-wrap: wrap; }
+.lobby-moderation .section-heading p { margin-bottom: 0; font-size: 13px; line-height: 1.7; }
+.lobby-moderation .secondary-button { flex: 0 0 auto; }
+.lobby-moderation .moderation-panel { border: 0; border-top: 1px solid var(--site-border); border-radius: 0; padding: 24px 0 0; margin: 24px 0 0; }
+html[data-theme] .competition-page .event-hero-card { background: var(--site-surface); color: var(--site-text); border: 1px solid var(--site-border); padding: clamp(20px, 4vw, 40px); }
+html[data-theme] .competition-page .event-hero-card :is(.eyebrow, .back-link, .event-theme) { color: var(--site-muted); }
+html[data-theme] .competition-page .code-display { background: var(--site-selected); border-color: var(--site-border); }
+html[data-theme] .competition-page .code-display :is(span, strong, button) { color: var(--site-accent-text); border-color: var(--site-border); }
+@media(max-width: 650px) {
+  .lobby-heading { align-items: start; flex-direction: column; gap: 12px; }
+  .competition-lobby-hero .join-card .join-fields { grid-template-columns: 1fr; }
+  .competition-lobby-hero .join-fields > .primary-button { margin-top: 0; }
+  .public-challenges .section-heading { align-items: start; flex-wrap: wrap; }
+}
 @media(max-width: 500px) { .profile-popover { position: fixed; top: 53px; right: 12px; } .profile-avatar, .profile-placeholder { width: 36px; height: 36px; } }
