@@ -2,20 +2,20 @@ import Link from "next/link";
 import PolicyPage from "@/components/PolicyPage";
 
 export const metadata = {
-  title: "Terms & community rules · Pixel Art Studio",
-  description: "Artwork ownership, fair competition, community rules and support for the Pixel Art Studio beta.",
+  title: "Terms & community rules · PixelsDraw",
+  description: "Artwork ownership, fair competition, community rules and support for the PixelsDraw beta.",
   alternates: { canonical: "/terms" },
 };
 
 export default function TermsPage() {
-  return <PolicyPage title="Terms & community rules" introduction="Pixel Art Studio is a beta pixel-art editor and competition platform. These terms describe the conditions for using the service. Questions or concerns can be sent to alishpandey07@gmail.com.">
+  return <PolicyPage title="Terms & community rules" introduction="PixelsDraw is a beta pixel-art editor and competition platform. These terms describe the conditions for using the service. Questions or concerns can be sent to alishpandey07@gmail.com.">
     <section><h2>Your account and participation</h2>
       <p>Keep your sign-in account secure and use the service only where you are permitted to do so. Do not impersonate another person or access another account. Hosted rooms may allow nickname-only guests; public challenges require a confirmed account to enter or vote.</p>
       <p>Read the rules and deadlines for each competition. Hosts control their own room settings, while public challenges follow the displayed automatic schedule. A room code or direct link may be shared by anyone who has it.</p>
     </section>
     <section><h2>Your artwork stays yours</h2>
       <p>You retain ownership of your original artwork. Submit only content that you created or have permission to use. Do not present someone else&apos;s work as your own.</p>
-      <p>Submitting artwork gives Pixel Art Studio permission to store, process and display it as needed to run the competition, gallery, results and moderation features. It does not transfer ownership to us or give other visitors a general license to reuse your work. Publicly displayed images can still be viewed or copied by visitors, so do not submit anything that must remain confidential.</p>
+      <p>Submitting artwork gives PixelsDraw permission to store, process and display it as needed to run the competition, gallery, results and moderation features. It does not transfer ownership to us or give other visitors a general license to reuse your work. Publicly displayed images can still be viewed or copied by visitors, so do not submit anything that must remain confidential.</p>
       <p>Use the contact below to request removal of content you own. Hiding an entry or deleting a room from a list is not permanent data erasure; see the <Link href="/privacy">privacy policy</Link>.</p>
     </section>
     <section><h2>Create and compete respectfully</h2>

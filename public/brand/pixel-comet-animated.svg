@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 192" role="img" aria-labelledby="comet-title comet-description">
+  <title id="comet-title">PixelsDraw Pixel Comet</title>
+  <desc id="comet-description">An orange and gold pixel comet with friendly eyes, a flickering trail and a gentle floating motion.</desc>
+  <style>
+    .comet-body { animation: pd-comet-float 2.4s ease-in-out infinite; }
+    .comet-tail { animation: pd-comet-tail .8s steps(2, end) infinite; }
+    .comet-spark { animation: pd-comet-spark 1.6s steps(4, end) infinite; }
+    .comet-spark-2 { animation-delay: -.4s; }
+    .comet-spark-3 { animation-delay: -.8s; }
+    .comet-spark-4 { animation-delay: -1.2s; }
+    .comet-eyes { transform-box: fill-box; transform-origin: center; animation: pd-comet-blink 5.6s linear infinite; }
+    @keyframes pd-comet-float {
+      0%, 100% { transform: translate(0, 2px); }
+      50% { transform: translate(0, -4px); }
+    }
+    @keyframes pd-comet-tail {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .72; }
+    }
+    @keyframes pd-comet-spark {
+      0% { transform: translate(8px, 0); opacity: 0; }
+      25%, 50% { opacity: 1; }
+      75% { opacity: .6; }
+      100% { transform: translate(-16px, 0); opacity: 0; }
+    }
+    @keyframes pd-comet-blink {
+      0%, 42%, 46%, 100% { transform: scaleY(1); }
+      43%, 45% { transform: scaleY(.12); }
+    }
+    svg[data-paused="true"] * { animation-play-state: paused !important; }
+    @media (prefers-reduced-motion: reduce) {
+      .comet-body, .comet-tail, .comet-spark, .comet-eyes { animation: none; }
+      .comet-spark { opacity: .8; }
+    }
+  </style>
+  <g shape-rendering="crispEdges">
+    <g fill="#ff761a">
+      <rect class="comet-spark" x="64" y="42" width="12" height="12"/>
+      <rect class="comet-spark comet-spark-2" x="40" y="78" width="10" height="10"/>
+      <rect class="comet-spark comet-spark-3" x="72" y="134" width="12" height="12"/>
+      <rect class="comet-spark comet-spark-4" x="32" y="116" width="8" height="8"/>
+    </g>
+    <g fill="#ff4327">
+      <rect class="comet-spark comet-spark-3" x="104" y="30" width="14" height="14"/>
+      <rect class="comet-spark comet-spark-2" x="100" y="150" width="10" height="10"/>
+    </g>
+    <g class="comet-body">
+      <path class="comet-tail" fill="#ff4327" d="M176 24h64v16h32v16h16v80h-16v16h-32v16h-64v-16h-32v-16h-32v-16H80v-16H56V88h56V72h16V56h32V40h16z"/>
+      <path fill="#ff8b16" d="M176 40h64v16h32v16h16v64h-16v16h-32v16h-48v-16h-32v-16h-32v-16h-24v-16h24V88h16V72h32z"/>
+      <path class="comet-tail" fill="#ffb51b" d="M192 56h48v16h16v16h16v32h-16v16h-16v16h-48v-16h-16v-16h-32v-16h16V88h16V72h16z"/>
+      <path fill="#ffda58" d="M208 56h32v16h16v16h16v32h-16v16h-48v-16h-16V88h16z"/>
+      <g class="comet-eyes" fill="#172031">
+        <rect x="211" y="90" width="9" height="22" rx="2"/>
+        <rect x="240" y="90" width="9" height="22" rx="2"/>
+      </g>
+    </g>
+  </g>
+</svg>

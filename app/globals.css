@@ -32,9 +32,6 @@ a { color: inherit; }
 }
 .site-header nav { display: flex; align-items: center; gap: 0.35rem; }
 .brand { display: inline-flex; align-items: center; gap: 0.7rem; color: #181525; font-weight: 850; text-decoration: none; letter-spacing: -0.02em; }
-.brand-mark { display: grid; grid-template-columns: repeat(2, 0.55rem); gap: 2px; padding: 0.32rem; border-radius: 0.5rem; background: #181525; transform: rotate(-2deg); }
-.brand-mark i { width: 0.55rem; height: 0.55rem; background: #a78bfa; }
-.brand-mark i:nth-child(2), .brand-mark i:nth-child(3) { background: #fbbf24; }
 .nav-link { padding: 0.65rem 0.85rem; border-radius: 0.65rem; color: #5f586e; font-size: 0.88rem; font-weight: 750; text-decoration: none; }
 .nav-link:hover, .nav-link.active { background: #ebe7ff; color: #5b21b6; }
 .studio-intro { display: flex; align-items: end; justify-content: space-between; gap: 2rem; margin-bottom: 2rem; }

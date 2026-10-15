@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <title>PixelsDraw</title>
+  <g shape-rendering="crispEdges">
+    <path fill="#ff4327" d="M12 2h14v3h4v23h-4v2H12v-3H8v-4H4v-4H1v-4h6v-4h5z"/>
+    <path fill="#ff8b16" d="M14 5h12v3h3v17h-3v3H14v-3h-4v-4H7v-3h4v-5h3z"/>
+    <path fill="#ffda58" d="M18 8h7v4h3v10h-3v3h-9v-3h-3v-9h5z"/>
+    <path fill="#172031" d="M17 14h2v6h-2zm7 0h2v6h-2z"/>
+  </g>
+</svg>

@@ -15,6 +15,7 @@ Built with Next.js, React and Supabase.
 - Recurring public challenges, audience voting and automatic deadlines
 - Private artwork reports and reversible moderator review
 - Responsive layout and light/dark appearance
+- Animated Pixel Comet branding with a pause control and reduced-motion fallback
 
 ## Local development
 

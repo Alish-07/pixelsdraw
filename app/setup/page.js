@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-export const metadata = { title: "Connect Supabase · Pixel Art Studio" };
+export const metadata = { title: "Connect Supabase · PixelsDraw" };
 
 export default function SetupPage() {
   // This guide exposes implementation details that are useful only while the

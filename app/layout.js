@@ -5,15 +5,16 @@ import "./competition.css";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { siteUrl, allowIndexing } from "@/lib/site-config.mjs";
+import { SITE_NAME, siteUrl, allowIndexing } from "@/lib/site-config.mjs";
 import Script from "next/script";
 import { THEME_BOOTSTRAP } from "@/lib/theme-config.mjs";
 
 export const metadata = {
-  title: "Pixel Art Studio",
+  title: SITE_NAME,
+  applicationName: SITE_NAME,
   description: "Create pixel art and sprites, then join timed public challenges or host a competition.",
   metadataBase: new URL(siteUrl()),
-  openGraph: { title: "Pixel Art Studio", description: "Draw pixel art, create sprites and join public challenges.", type: "website" },
+  openGraph: { title: SITE_NAME, siteName: SITE_NAME, description: "Draw pixel art, create sprites and join public challenges.", type: "website" },
   robots: {
     index: allowIndexing(),
     follow: allowIndexing(),
