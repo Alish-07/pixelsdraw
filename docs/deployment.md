@@ -1,5 +1,23 @@
 # Deploy from GitHub
 
+## Current beta address
+
+The beta uses `https://pixelsdraw.alishpandey.com` on the existing Vercel project.
+Cloudflare holds a DNS-only CNAME for `pixelsdraw` pointing to the target supplied
+by Vercel. The apex `alishpandey.com`, `www`, nameservers and email records are not
+changed by this setup. There is no `/pixelsdraw` redirect on the personal-site root.
+
+Production sets `NEXT_PUBLIC_SITE_URL=https://pixelsdraw.alishpandey.com`. Keep the
+old Vercel address and its auth allowlist entries while shared links still use it.
+Google's existing web client allows the exact new HTTPS origin; Supabase allows
+`https://pixelsdraw.alishpandey.com/**` and uses the new origin as Site URL.
+The existing Turnstile widget also allows the new hostname. Do not rotate keys
+or create another database merely to add a domain.
+
+Browser drafts, saved drawings and sessions are origin-specific: they do not move
+from the Vercel address automatically. Export important work from the old address
+before clearing browser data. Competition data stays in the existing database.
+
 ## Publish the repository
 
 Create an empty GitHub repository named `pixelsdraw`. Start private while reviewing

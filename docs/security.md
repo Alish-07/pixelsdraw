@@ -13,12 +13,17 @@ published rule limits `/events*` or `/drawings*` requests to 120/minute/IP. Stat
 editor assets are excluded. Supabase auth email sending is set to 10/hour, with
 the existing 60-second interval per recipient retained.
 
-The frontend changes remain on the feature branch, not `main`. Final raw-ballot
-revocation waits for that production frontend deployment. Turnstile token handling
+The frontend changes are merged into `main` and deployed to Production. Final
+raw-ballot revocation remains pending the separate owner-confirmed cutover.
+Turnstile token handling
 covers Google, password login, signup, reset, resend and anonymous guest creation.
-The Managed widget is restricted to the production and feature-preview hostnames;
+The Managed widget is restricted to the custom beta domain, old production and feature-preview hostnames;
 its secret is stored only in Supabase and its public site key is configured in
-Vercel. Enforcement remains off until the production frontend cutover. No
+Vercel. Server-side enforcement is enabled: a password request without a CAPTCHA
+token returns `captcha_failed`, while the new domain's real widget allows an
+invalid-account test to reach normal credential validation. No account was
+created and no email was sent by these checks. Real Google signup/login and
+email-confirmation testing on the new domain still require owner verification. No
 paid provider upgrade was purchased and no destructive data purge was performed.
 
 Local widget checks used Cloudflare's official passing/failing test site keys:
@@ -64,12 +69,12 @@ configuration are ignored. Only `.env.example` is intentionally tracked.
 
 ### Remaining release gate
 
-Follow the Turnstile checklist in `docs/deployment.md` before merging this release.
-Keep the server CAPTCHA switch off until the matching frontend has been deployed
-and verified. Finish the real-widget check, deploy the matching frontend, enable
-enforcement and verify token rejection/acceptance. Then finish the raw-ballot
-permission cutover. Real signup/confirmation and device passkey enrollment need
-owner testing; passkeys remain disabled for this release.
+Follow the Turnstile checklist in `docs/deployment.md` when changing the auth
+deployment. Matching frontend and server CAPTCHA enforcement are now live. Finish
+the separately owner-confirmed raw-ballot permission cutover and test real
+Google login, signup/confirmation and password recovery on the custom domain.
+Device passkey enrollment needs owner testing; passkeys remain disabled for
+this release.
 
 No migration deletes accounts, drawings, ballots or history. Existing large
 artwork is preserved. New online competitions are capped at a 256-pixel side and
