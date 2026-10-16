@@ -172,6 +172,10 @@ available and export important drawings before switching.
 
 ## Rollback
 
+For the October 16 security release, follow [the security rollout order](security.md)
+before merging: database budgets first, new frontend second, raw-ballot grant
+cutover last. The old production frontend still needs its own-ballot table read.
+
 Restore a previous READY Vercel deployment or revert a source commit. Do not drop
 database tables or rerun earlier migrations as a deployment rollback. Verify
 database compatibility before restoring an older frontend.

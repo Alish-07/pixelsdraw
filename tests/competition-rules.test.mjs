@@ -57,6 +57,15 @@ test("animation, dimensions, pixels, blank work and limits are validated", () =>
   assert.match(validateCompetitionArtwork(event, { ...art, fps: 25 }), /FPS/);
   assert.match(validateCompetitionArtwork(event, { ...art, frames: Array(2).fill(Array(4).fill("#ffffff")) }), /Draw something/);
 });
+
+test("online beta limits reject oversized rules and animation without shrinking personal canvases", () => {
+  const data=new FormData();
+  for(const [key,value] of Object.entries({canvasMode:"fixed",allowedSizes:"257",animation:"disabled",hostVotePercent:"0"}))data.set(key,value);
+  assert.throws(()=>settingsFromForm(data),/256/);
+  data.set("allowedSizes","256");assert.equal(settingsFromForm(data).p_size,256);
+  const frames=[Array(65536).fill("#123456"),Array(65536).fill("#123456")];
+  assert.match(validateCompetitionArtwork({size:256,animation_mode:"optional"},{size:256,frames,fps:6}),/65,536/);
+});
 test("current excludes finished/week-old rooms; deleted rooms remain recoverable", () => {
   const now = Date.parse("2026-10-07T12:00:00Z");
   const room = { phase: "lobby", created_at: "2026-10-07T00:00:00Z" };

@@ -13,6 +13,9 @@ for (const file of (await readdir(root+'/supabase/migrations')).sort()) {
   try { await db.exec(await readFile(root+'/supabase/migrations/'+file,'utf8')); console.log('Applied:',file); }
   catch(error) { console.error('Migration failed:',file,error.message); process.exit(1); }
 }
+// These regression fixtures create many rooms for one host. Default quota
+// enforcement is tested separately in security-budgets.mjs.
+await db.exec("update pixel_private.pixel_security_limits set amount=1000 where name in ('rooms_per_hour','rooms_per_day','open_rooms_per_account','rooms_global_per_day')");
 const uid = (n) => `00000000-0000-0000-0000-${String(n).padStart(12,'0')}`;
 async function as(n) { await db.query("select set_config('request.jwt.claim.sub',$1,false)",[uid(n)]); }
 async function rpc(name,args) { const rows=(await db.query(`select public.${name}(${args.map((_,i)=>'$'+(i+1)).join(',')}) as result`,args)).rows; return rows[0].result; }

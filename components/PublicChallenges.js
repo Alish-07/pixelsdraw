@@ -14,23 +14,30 @@ export default function PublicChallenges({ client }) {
   const [archiveLimit, setArchiveLimit] = useState(12);
   const [now, setNow] = useState(0);
   const request = useRef(0);
+  const loading = useRef(false);
+  const retryAfter = useRef(0);
   const invalidateRequests = useCallback(() => { request.current++; }, []);
   const load = useCallback(async () => {
     if (!client) { setLoaded(true); return; }
+    if (loading.current || Date.now() < retryAfter.current) return;
+    loading.current = true;
     const id = ++request.current;
     try {
       const { data, error } = await client.rpc("pixel_public_challenges");
       if (error) throw error;
       if (id !== request.current) return;
       setRounds(data || []); setError("");
-    } catch {
-      if (id === request.current) setError("We couldn't update the challenges. Check your connection and try again.");
-    } finally { if (id === request.current) setLoaded(true); }
+    } catch (error) {
+      if (error.code === "PT429" || error.status === 429) retryAfter.current = Date.now() + 60000;
+      if (id === request.current) setError(error.code === "PT429" || error.status === 429
+        ? "Challenges are busy right now. Please wait a minute before trying again."
+        : "We couldn't update the challenges. Check your connection and try again.");
+    } finally { loading.current = false; if (id === request.current) setLoaded(true); }
   }, [client]);
   useEffect(() => {
     let cancelled = false;
     const first = window.setTimeout(() => { if (!cancelled) { load(); setNow(Date.now()); } }, 0);
-    const poll = window.setInterval(() => { if (document.visibilityState === "visible") load(); }, 15000);
+    const poll = window.setInterval(() => { if (document.visibilityState === "visible") load(); }, 30000);
     const clock = window.setInterval(() => setNow(Date.now()), 1000);
     const resume = () => { if (document.visibilityState === "visible") { setNow(Date.now()); load(); } };
     window.addEventListener("online", resume);

@@ -60,10 +60,9 @@ function Ballot({ client, event, user, onSaved, isHost, votingClosed = false }) 
     let cancelled = false;
     async function load() {
       try {
-        const { data, error } = await client.from("pixel_ballots").select("choices")
-          .eq("event_id", event.id).eq("voter_id", user.id).maybeSingle();
+        const { data, error } = await client.rpc("pixel_my_ballot", { p_event: event.id });
         if (error) throw error;
-        if (!cancelled && data) setChoices([data.choices[0] || "", data.choices[1] || "", data.choices[2] || ""]);
+        if (!cancelled && data) setChoices([data[0] || "", data[1] || "", data[2] || ""]);
       } catch (error) {
         if (!cancelled) setMessage(error.message || "Could not load your previous ballot.");
       } finally {
@@ -145,6 +144,9 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
   const deleteDialog = useRef(null);
   useEffect(() => { const tick = window.setTimeout(() => { setNow(Date.now()); }, 0); return () => window.clearTimeout(tick); }, []);
   const requestNumber = useRef(0);
+  const snapshotCache = useRef(null);
+  const refreshing = useRef(false);
+  const retryAfter = useRef(0);
   const competitionEditor = useRef(null);
   const hostUser = user && !user.is_anonymous ? user : null;
   const isHost = Boolean(event && event.host_id === user?.id);
@@ -200,14 +202,18 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
   }, [eventId, nicknameKeyPrefix]);
 
   const refresh = useCallback(async () => {
-    if (!client) return;
+    if (!client || refreshing.current || Date.now() < retryAfter.current) return;
+    refreshing.current = true;
     const request = ++requestNumber.current;
     try {
       if (eventId) {
-        const { data, error } = await client.rpc("pixel_event_snapshot", { p_event: eventId });
+        const cached = snapshotCache.current?.id === eventId ? snapshotCache.current : null;
+        const { data, error } = await client.rpc("pixel_event_snapshot_delta", { p_event: eventId, p_art_version: cached?.art_version || null });
         if (error) throw error;
         if (request !== requestNumber.current) return;
-        setEvent(data);
+        const next = data?.art_unchanged && cached ? { ...cached, ...data } : data;
+        snapshotCache.current = next;
+        setEvent(next);
         if (data?.my_nickname) {
           setParticipantName(data.my_nickname);
           try { localStorage.setItem(nicknameKeyPrefix + eventId, data.my_nickname); } catch { /* Keep the live session working without browser storage. */ }
@@ -223,15 +229,16 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
       }
       setLoadError("");
     } catch (error) {
+      if (error.code === "PT429" || error.status === 429) retryAfter.current = Date.now() + 60000;
       if (request === requestNumber.current) setLoadError(competitionError(error, "Could not load competitions."));
     } finally {
+      refreshing.current = false;
       if (request === requestNumber.current) setLoaded(true);
     }
   }, [client, eventId, hostUser, nicknameKeyPrefix]);
 
   useEffect(() => {
     // The database response is the external event that updates this client view.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
     const request = requestNumber.current;
     return () => {
@@ -242,7 +249,7 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
 
   useEffect(() => {
     if (!eventId && !hostUser) return;
-    const timer = window.setInterval(refresh, eventId ? 5000 : 15000);
+    const timer = window.setInterval(() => { if (document.visibilityState === "visible") refresh(); }, eventId ? 10000 : 30000);
     return () => window.clearInterval(timer);
   }, [eventId, hostUser, refresh]);
 
