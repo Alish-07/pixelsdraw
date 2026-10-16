@@ -4,6 +4,8 @@ import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 import { exchangeGoogleCredential, googleNonce } from "@/lib/google-sign-in.mjs";
 import { friendlyAuthError } from "@/lib/site-ui.mjs";
+import AuthCaptcha from "./AuthCaptcha";
+import { captchaEnabled } from "@/lib/captcha.mjs";
 
 const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 let identitySetup;
@@ -28,20 +30,24 @@ export default function GoogleSignIn({ client, disabled = false, onBusyChange })
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const inFlight = useRef(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaAttempt, setCaptchaAttempt] = useState(0);
+  const securityPending = captchaEnabled() && !captchaToken;
 
   useEffect(() => {
     if (!loaded || !clientId) return;
     let cancelled = false;
     async function receive(response, nonce) {
-      if (cancelled || inFlight.current || disabled) return;
+      if (cancelled || inFlight.current || disabled || securityPending) return;
       inFlight.current = true; setBusy(true); onBusyChange?.(true); setMessage("");
       try {
-        await exchangeGoogleCredential(client, response, nonce);
+        await exchangeGoogleCredential(client, response, nonce, captchaToken);
         // Reset Google's page-level nonce and preserve the current room/host URL.
         window.location.reload();
       } catch (error) {
         if (!cancelled) setMessage(friendlyAuthError(error, "Could not finish Google sign-in. Please try again."));
       } finally {
+        setCaptchaToken(""); setCaptchaAttempt(value => value + 1);
         inFlight.current = false;
         onBusyChange?.(false);
         if (!cancelled) setBusy(false);
@@ -58,12 +64,13 @@ export default function GoogleSignIn({ client, disabled = false, onBusyChange })
       });
     }).catch(() => { if (!cancelled) setMessage("Google sign-in could not load. Please refresh to try again."); });
     return () => { cancelled = true; if (activeButton === receive) activeButton = null; };
-  }, [client, loaded, disabled, onBusyChange]);
+  }, [client, loaded, disabled, onBusyChange, captchaToken, securityPending]);
 
   if (!clientId) return <p className="google-signin-status">Google sign-in is temporarily unavailable. Please try again later.</p>;
   return <div className="google-signin" aria-busy={busy}>
     <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" onReady={() => setLoaded(true)} onError={() => setMessage("Google sign-in could not load. Please refresh to try again.")} />
-    <div ref={container} className="google-signin-button" inert={disabled || busy} />
+    <AuthCaptcha key={captchaAttempt} onToken={setCaptchaToken} />
+    <div ref={container} className="google-signin-button" inert={disabled || busy || securityPending} />
     {!loaded && !message && <p role="status">Loading Google sign-in…</p>}
     {busy && <p role="status">Signing you in…</p>}
     {message && <p role="alert">{message}</p>}

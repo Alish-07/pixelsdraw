@@ -17,6 +17,9 @@ import { artworkTitle, describeCanvas, parseTimer, roomCategory, settingsFromFor
 import { phaseLabel } from "@/lib/site-ui.mjs";
 import { useAuth } from "./AuthProvider";
 import { accountProfile, draftOwner } from "@/lib/account-profile.mjs";
+import AuthCaptcha from "./AuthCaptcha";
+import { captchaEnabled } from "@/lib/captcha.mjs";
+import { participantSession } from "@/lib/guest-auth.mjs";
 
 
 function competitionError(error, fallback) {
@@ -131,6 +134,9 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [joinMessage, setJoinMessage] = useState("");
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaAttempt, setCaptchaAttempt] = useState(0);
+  const joining = useRef(false);
   const [loadError, setLoadError] = useState("");
   const [showEditor, setShowEditor] = useState(false);
   const [participantName, setParticipantName] = useState("");
@@ -292,24 +298,21 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
   }, [client, eventId, user?.id, participantName, isHost, event?.my_admission, heartbeatStatus, refresh]);
 
   async function ensureParticipantSession(nickname) {
-    const { data: sessionData, error: sessionError } = await client.auth.getSession();
-    if (sessionError) throw sessionError;
-    if (sessionData.session?.user) return sessionData.session.user;
-    const { data, error } = await client.auth.signInAnonymously({ options: { data: { nickname } } });
-    if (error) throw error;
-    setUser(data.user);
+    const participant = await participantSession(client, nickname, captchaToken);
+    setUser(participant);
     setAuthReady(true);
-    return data.user;
+    return participant;
   }
 
   async function joinCompetition(formEvent) {
     formEvent.preventDefault();
-    if (!client || busy) return;
+    if (!client || busy || joining.current) return;
     const form = new FormData(formEvent.currentTarget);
     const code = normalizeJoinCode(form.get("joinCode"));
     const nickname = normalizeNickname(suggestedValue(form, "nickname"));
     if (!isValidJoinCode(code)) return setJoinMessage("Enter the six-digit code from your host.");
     if (!nickname) return setJoinMessage("Choose a nickname so the host knows who joined.");
+    joining.current = true;
     setBusy(true);
     setJoinMessage("");
     try {
@@ -324,16 +327,19 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
     } catch (error) {
       setJoinMessage(error.message || "Could not find that competition.");
     } finally {
+      joining.current = false;
+      setCaptchaToken(""); setCaptchaAttempt(value => value + 1);
       setBusy(false);
     }
   }
 
   async function joinEventWithNickname(formEvent) {
     formEvent.preventDefault();
-    if (busy) return;
+    if (busy || joining.current) return;
     const data = new FormData(formEvent.currentTarget);
     const nickname = normalizeNickname(suggestedValue(data, "nickname"));
     if (!nickname) return setMessage("Choose a nickname to join this competition.");
+    joining.current = true;
     setBusy(true);
     setMessage("");
     try {
@@ -349,6 +355,8 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
     } catch (error) {
       setMessage(error.message || "Could not join with that nickname.");
     } finally {
+      joining.current = false;
+      setCaptchaToken(""); setCaptchaAttempt(value => value + 1);
       setBusy(false);
     }
   }
@@ -480,7 +488,8 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
           <fieldset disabled={busy || !client}><div className="join-fields"><label htmlFor="join-code">Room code
             <input id="join-code" name="joinCode" inputMode="numeric" autoComplete="off" required maxLength={8} placeholder="123 456" aria-describedby="join-help" /></label>
             <SuggestedField name="nickname" label="Nickname" kind="nickname" maxLength={60} autoComplete="nickname" preferredName={accountProfile(user).displayName} />
-            <button className="primary-button">{busy ? "Finding…" : "Join room"}</button></div></fieldset>
+            <button className="primary-button" disabled={!user && captchaEnabled() && !captchaToken}>{busy ? "Finding…" : "Join room"}</button></div>
+            {!user && <AuthCaptcha key={captchaAttempt} onToken={setCaptchaToken} />}</fieldset>
           <p id="join-help" role="status">{joinMessage || (!client ? "Joining rooms is temporarily unavailable. Your studio drawings are still available." : "Join with a nickname. No account needed.")}</p>
         </form>
       </section><PublicChallenges client={client} /></> : <section className="host-area host-setup">
@@ -537,7 +546,8 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
               : ["lobby", "submissions"].includes(event.phase) ? <form className="nickname-card" onSubmit={joinEventWithNickname}>
                 <div><p className="eyebrow">Join this competition</p><h3>Choose your nickname</h3><p>{event.challenge_key ? "You are signed in. Choose a public nickname for your artwork." : "Your nickname appears beside your artwork. No email or password is needed."}</p></div>
                 <SuggestedField name="nickname" label="Nickname" kind="nickname" maxLength={60} autoComplete="nickname" preferredName={accountProfile(user).displayName} />
-                <button className="primary-button" disabled={busy}>{busy ? "Joining…" : "Join competition"}</button>
+                {!user && <AuthCaptcha key={captchaAttempt} onToken={setCaptchaToken} />}
+                <button className="primary-button" disabled={busy || (!user && captchaEnabled() && !captchaToken)}>{busy ? "Joining…" : "Join competition"}</button>
               </form> : <p className="host-signin-note">{event.challenge_key && event.phase === "voting" ? "Audience voting is open. You do not need to have submitted artwork to vote." : "This competition is no longer accepting new participants."}</p>}
         {event.challenge_key && <p className="host-hint">{event.phase === "submissions" ? "Create your entry before the timer ends. The gallery opens for voting when drawing closes." : event.phase === "voting" ? "The gallery is open. Pick your favorites before voting closes." : <>Ready for another? <Link href="/events#public-challenges">Find your next challenge</Link>.</>}</p>}
         {event.my_entry_hidden && <p className="error-notice" role="status">Your artwork has been hidden after moderator review. Your submission is preserved and cannot be resubmitted in this round.</p>}

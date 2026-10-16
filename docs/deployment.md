@@ -106,6 +106,47 @@ creating accounts or sending live email.
 
 See [Supabase's SMTP guide](https://supabase.com/docs/guides/auth/auth-smtp).
 
+### CAPTCHA rollout (Cloudflare Turnstile)
+
+Supabase validates Turnstile tokens server-side; a widget alone does not protect
+its public Auth API. Follow this order to avoid breaking sign-in and guest joins:
+
+1. In Cloudflare Turnstile, create a Managed widget restricted to the exact
+   production and feature-preview hostnames. Add `localhost` only if testing there.
+   The domain does not need to be proxied through Cloudflare. The account owner
+   should handle the new secret key directly, not paste it in chat or source.
+2. Put the **public site key** in `NEXT_PUBLIC_TURNSTILE_SITE_KEY` for Preview and
+   Production. Never put the secret in a public environment variable. Set the
+   matching secret directly in Supabase's CAPTCHA settings, initially leaving
+   enforcement off. Deploy the feature preview with its site key.
+3. Check widget loading, expiry, retry, blocked-script messaging, and switching
+   email forms. Tokens are single-use: the form remounts its widget after each
+   attempt. Google ID-token sign-in and guest account creation also pass tokens.
+   Existing anonymous sessions can join another room without creating an account.
+4. Deploy the prepared frontend to Production before enabling Supabase CAPTCHA
+   enforcement. The production database is shared with preview: enabling it while
+   the old frontend is live would break old sign-in forms. Coordinate this short
+   cutover, then test Google, password login, new signup/confirmation, reset/resend
+   and a signed-out nickname-only join. The user completes real credentials and
+   any challenge personally. Never use Cloudflare test keys in production.
+5. Confirm direct Auth requests without valid tokens fail. Retain Auth rate limits
+   and database budgets: CAPTCHA is additional friction, not a DDoS guarantee.
+   If the cutover fails, disable CAPTCHA enforcement before rolling back to a
+   frontend that does not send tokens.
+
+See [Supabase CAPTCHA](https://supabase.com/docs/guides/auth/auth-captcha) and
+[Turnstile rendering](https://developers.cloudflare.com/turnstile/get-started/client-side-rendering/).
+
+### Usage and spending review
+
+Before release, check the current plan and billing/usage pages in Vercel and
+Supabase and verify notification recipients. Enable supported spending/usage
+alerts and retain any free-plan/spend caps; do not upgrade or remove caps just
+to enable an alert. Check database size, egress, active users and function/edge
+traffic, plus Brevo's daily email usage. Document controls that the current plan
+does not offer instead of claiming a guaranteed billing ceiling. Database request
+budgets and the WAF do not meter every provider product or rejected request.
+
 ### Passkey preparation and testing
 
 Passkeys use the pinned SDK's `auth.signInWithPasskey`, `auth.registerPasskey` and

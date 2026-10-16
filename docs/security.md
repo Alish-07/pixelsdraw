@@ -14,9 +14,20 @@ editor assets are excluded. Supabase auth email sending is set to 10/hour, with
 the existing 60-second interval per recipient retained.
 
 The frontend changes remain on the feature branch, not `main`. Final raw-ballot
-revocation waits for that production frontend deployment. CAPTCHA is not yet
-integrated; it must be prepared and tested before a broad signup campaign. No
+revocation waits for that production frontend deployment. Turnstile token handling
+is prepared for Google, password login, signup, reset, resend and anonymous guest
+creation, but the widget keys and hosted CAPTCHA enforcement are not configured
+or end-to-end tested. Do not treat prepared code as active protection. No
 paid provider upgrade was purchased and no destructive data purge was performed.
+
+Local widget checks used Cloudflare's official passing/failing test site keys:
+concurrent Google/email widgets load, mode changes reset the widget, and failures
+keep submission locked with a retry action. No real Auth requests were submitted
+with test tokens. Test keys were removed from the temporary development config.
+Supabase's Usage page still shows Free Plan, no quota exceeded, and no overage
+billing (restrictions may apply instead). Vercel and Cloudflare dashboard access
+currently requires the owner to sign in again; their remaining configuration is
+not verified by this release.
 
 ## Public repository and browser configuration
 
@@ -47,6 +58,13 @@ configuration are ignored. Only `.env.example` is intentionally tracked.
    deliberately separate so the still-running old frontend is not broken first.
 4. Check the live permission and budget tests, Security Advisor, CAPTCHA and
    provider-level spending/protection settings before a broad launch.
+
+### Remaining release gate
+
+Follow the Turnstile checklist in `docs/deployment.md` before merging this release.
+Keep the server CAPTCHA switch off until the matching frontend has been deployed
+and verified. The next merge remains pending that setup and provider usage-alert
+review. No new spending alert configuration has been verified yet.
 
 No migration deletes accounts, drawings, ballots or history. Existing large
 artwork is preserved. New online competitions are capped at a 256-pixel side and

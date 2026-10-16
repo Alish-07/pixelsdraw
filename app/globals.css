@@ -209,6 +209,9 @@ h1 {
 .google-button:hover:not(:disabled), .email-link-button:hover:not(:disabled) { border-color: #7c3aed; background: #f7f5ff; }
 .google-button:disabled, .email-link-button:disabled { opacity: 0.55; cursor: not-allowed; }
 .google-mark { display: grid; place-items: center; width: 1.35rem; height: 1.35rem; border-radius: 50%; color: #4285f4; font: 900 1rem Arial, sans-serif; }
+.auth-captcha { width: 100%; min-width: 0; max-width: 100%; margin-block: 0.5rem; overflow-x: auto; }
+.auth-captcha:empty { display: none; }
+.nickname-card .auth-captcha { grid-column: 1 / -1; }
 .signin-divider { grid-column: 1 / -1; display: flex; align-items: center; gap: 0.75rem; color: #8a8294; font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.08em; }
 .signin-divider::before, .signin-divider::after { height: 1px; flex: 1; background: #e4e1e8; content: ""; }
 .email-signin-form { grid-column: 1 / -1; }
