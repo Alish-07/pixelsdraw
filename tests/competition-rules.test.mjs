@@ -1,6 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { allowsCanvas, artworkTitle, canvasRules, describeCanvas, fieldSuggestion, nicknameSuggestion, parseTimer, roomCategory, settingsFromForm, suggestedValue, timerText, validateCompetitionArtwork, votingDuration } from "../lib/competition-rules.mjs";
+import { allowsCanvas, artworkTitle, canvasRules, describeCanvas, fieldInputState, fieldSuggestion, nicknameSuggestion, parseTimer, roomCategory, settingsFromForm, suggestedValue, timerText, validateCompetitionArtwork, votingDuration } from "../lib/competition-rules.mjs";
+
+test("profile nickname fills the actual input, including late auth, without overwriting edits", () => {
+  assert.equal(fieldInputState("", "Pixel Fox").value, "");
+  assert.deepEqual(fieldInputState("Xenon", "Pixel Fox"), { value: "Xenon", fallback: "Xenon", automatic: true });
+  assert.equal(fieldInputState("New profile name", "Pixel Fox", "My room name").value, "My room name");
+  assert.equal(fieldInputState("Xenon", "Pixel Fox", "").value, "");
+  assert.equal(fieldInputState("Xenon", "Pixel Fox", "My room name").automatic, false);
+  assert.equal(fieldInputState("Xenon", "Pixel Fox", "  ").automatic, true);
+  const data = new FormData(); data.set("nickname", fieldInputState("Xenon", "Pixel Fox").value);
+  assert.equal(suggestedValue(data, "nickname"), "Xenon");
+});
 
 test("arbitrary exact/list/range sizes are distinct and squares stay bounded", () => {
   const list = { mode: "list", sizes: [37, 91] };

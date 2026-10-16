@@ -47,6 +47,29 @@ describes repository connection, previews and production-branch deployments.
 
 ## Domain and authentication
 
+### Direct Google sign-in
+
+The account panels use Google Identity Services' official button in popup mode,
+then exchange its ID token with `supabase.auth.signInWithIdToken`. Supabase still
+verifies identities and manages sessions; database ownership and RLS are unchanged.
+Keep the existing Google web client registered with the existing Supabase provider.
+Do not generate a replacement client or disable nonce verification.
+
+Set `NEXT_PUBLIC_GOOGLE_CLIENT_ID` in the deployment environment before building.
+It is a public OAuth client ID, not a client secret. The Google client secret must
+remain in Supabase, never in a `NEXT_PUBLIC_` variable or application source.
+In Google Cloud → Google Auth Platform → Clients, add the exact website origin to
+Authorized JavaScript origins (no paths or wildcards). Local testing uses
+`http://localhost:3000`; production uses the deployed HTTPS origin. A future domain
+needs its own exact origin. Preserve the existing Supabase redirect URI for other
+OAuth clients/flows. Google's brand verification and browser UI determine the
+displayed application name or domain; the app cannot set the account chooser text.
+
+Test an existing Google account, a guest-to-Google switch, a cancelled popup,
+blocked Google scripts, and return to `/events?host=1` before release. Without the
+client ID or Google script, the app offers a clear unavailable state and keeps
+email-link sign-in available. No custom Supabase auth-domain add-on is required.
+
 ### Competition lobby and six-hour schedule release
 
 Apply `supabase/migrations/202610150001_six_hour_challenges.sql` to the test database
@@ -71,8 +94,9 @@ Set `NEXT_PUBLIC_SITE_URL` to the final HTTPS origin and redeploy. Keep
 `NEXT_PUBLIC_ALLOW_INDEXING=false` until the beta launch checks are complete.
 
 Update Supabase's Site URL and allowed sign-in return URLs for the new domain.
-Google's OAuth callback stays on the same Supabase project; do not replace it
-with the website hostname. Verify Google/email sign-in and return-to-room flows
+Add the new website origin to Google's Authorized JavaScript origins. Preserve
+the existing Supabase OAuth callback rather than replacing it with the website
+hostname. Verify Google/email sign-in and return-to-room flows
 on the final origin. Configure production email delivery and publish the operator's
 actual support, privacy and community-policy information before a wider launch.
 

@@ -10,6 +10,8 @@ import { LogoAnimationSetting, useStudioPreferences } from "./StudioPreferences"
 import { editorMenuPosition, workspacePanels } from "@/lib/studio-preferences.mjs";
 import { savedFrameRate } from "@/lib/site-ui.mjs";
 import DrawingSaveControl from "./DrawingSaveControl";
+import { useAuth } from "./AuthProvider";
+import { draftOwner } from "@/lib/account-profile.mjs";
 import { brushFootprints, ditherAccept, invertColor, rasterBytes, reorderLayers, nextLayerName, panelWidth, placeFloating, pointerPixel, renumberLayers, transformClip, zoomScale } from "@/lib/editor-lab.mjs";
 import {
   brushIndices, compositeRgba, copyPixels, ellipseIndices, fillArea, flattenFrame, lineIndices,
@@ -17,7 +19,6 @@ import {
   rgbaHex, selectionContains, selectionFromIndices,
 } from "@/lib/pixel-document.mjs";
 
-const OLD_STORAGE_KEY = "pixel-art-studio:draft:v1";
 const HISTORY_LIMIT = 30;
 const MAX_PIXELS = 1048576;
 const MAX_DOCUMENT_PIXELS = 16777216;
@@ -114,14 +115,21 @@ function ShapePreview({ indices, width, height, color }) {
   return <canvas className="shape-preview" ref={ref} width={width} height={height} aria-hidden="true" />;
 }
 
-export default function PixelCanvas({ isActive = true, competition = null, onSubmitArtwork, participantName = "", storageScope = "main" }) {
+export default function PixelCanvas(props) {
+  const { user, ready } = useAuth();
+  if (!ready) return <p role="status">Opening your workspace…</p>;
+  const owner = draftOwner(user);
+  return <AccountCanvas key={`${owner}:${props.storageScope || "main"}:${props.competition?.id || ""}`} {...props} owner={owner} />;
+}
+
+function AccountCanvas({ owner, isActive = true, competition = null, onSubmitArtwork, participantName = "", storageScope = "main" }) {
   const [libraryMessage, setLibraryMessage] = useState("");
   const rules = canvasRules(competition);
   const requiredSize = competition && rules.mode === "fixed" ? rules.sizes[0] : null;
   const defaultSize = competition?.size || 16;
   const ruleKey = competition ? JSON.stringify(rules) : "";
   const animationDisabled = competition && (competition.animation_mode || "disabled") === "disabled";
-  const { primary: draftKey, legacy: legacyKey, labFallback } = editorDraftKeys(competition?.id, storageScope);
+  const { primary: draftKey, legacy: legacyKey, labFallback } = editorDraftKeys(competition?.id, storageScope, owner);
   const { theme, preference, setPreference } = useTheme();
   const { workspaceMode, updatePreferences } = useStudioPreferences();
   const advancedWorkspace = workspaceMode === "advanced";
@@ -232,18 +240,11 @@ export default function PixelCanvas({ isActive = true, competition = null, onSub
       try { stored = await readLabDraft(draftKey); } catch { /* Fall back to the older browser draft. */ }
       if (cancelled) return;
       let saved = null;
-      let oldSaved = null;
       try {
         saved = localStorage.getItem(draftKey) || localStorage.getItem(legacyKey);
-        oldSaved = storageScope === "main" && !competition && !stored && !saved ? localStorage.getItem(OLD_STORAGE_KEY) : null;
       } catch { /* IndexedDB drafts still work when localStorage is unavailable. */ }
       if (!stored && !saved && labFallback) { try { stored = await readLabDraft(labFallback); } catch { /* Start a fresh main draft if no lab draft exists. */ } }
       let document = stored || (saved ? JSON.parse(saved) : null);
-      if (!document && oldSaved) {
-        const old = JSON.parse(oldSaved);
-        document = starterDocument(old.size);
-        document.frames[0].layers[0].pixels = old.pixels;
-      }
       if (cancelled) return;
       // A newly opened room must start at its required size, never reuse the
       // preceding room's unsaved state or its undo history.

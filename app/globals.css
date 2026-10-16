@@ -628,7 +628,7 @@ kbd {
 .host-settings h3, .host-settings p { margin: 0; }
 .host-settings label:not(.checkbox-row) { display: grid; gap: 0.35rem; color: #514a5c; font-size: 0.78rem; font-weight: 800; }
 .host-settings select { min-width: 0; padding: 0.7rem; border: 1px solid #cfc8d7; border-radius: 0.55rem; background: white; }
-.host-hint { margin: -0.8rem 0 1.5rem; color: #7c3aed !important; font-size: 0.82rem; font-weight: 700; }
+.host-hint { margin: .5rem 0 1rem; color: var(--site-muted); font-size: .875rem; font-weight: 400; line-height: 1.6; }
 .gallery-locked { margin-top: 1.5rem; padding: 2rem; border: 1px dashed #b9addc; border-radius: 1rem; background: #faf9ff; text-align: center; }
 .gallery-locked h3, .gallery-locked p { margin: 0; }
 .gallery-locked p:last-child { margin-top: 0.5rem; }

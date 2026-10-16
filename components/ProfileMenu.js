@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "./AuthProvider";
+import { accountProfile } from "@/lib/account-profile.mjs";
 
 export default function ProfileMenu() {
   const { client, user, ready } = useAuth();
@@ -12,7 +13,8 @@ export default function ProfileMenu() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const signedIn = user && !user.is_anonymous;
-  const initial = (user?.user_metadata?.full_name || user?.email || "P").trim().slice(0, 1).toUpperCase();
+  const { displayName } = accountProfile(user);
+  const initial = (displayName || "P").slice(0, 1).toUpperCase();
   useEffect(() => {
     const close = event => {
       if (event.type === "keydown" && event.key !== "Escape") return;
@@ -28,7 +30,7 @@ export default function ProfileMenu() {
   async function signOut() {
     setBusy(true); setError("");
     try {
-      const { error } = await client.auth.signOut();
+      const { error } = await client.auth.signOut({ scope: "local" });
       if (error) throw error;
     } catch { setError("Could not sign out. Please try again."); }
     finally { setBusy(false); }
@@ -38,7 +40,8 @@ export default function ProfileMenu() {
   return <details className="profile-menu" ref={menu}>
     <summary className="profile-avatar" aria-label="Your profile">{initial}</summary>
     <div className="profile-popover">
-      <strong>Your account</strong><span className="profile-email">{user.email}</span>
+      <strong>{displayName || "Your account"}</strong><span className="profile-email">{user.email}</span>
+      {!displayName && <Link href="/account">Choose your public name</Link>}
       <Link href="/drawings">My drawings</Link><Link href="/account">Account</Link>
       <button type="button" disabled={busy} onClick={signOut}>{busy ? "Signing out…" : "Sign out"}</button>
       {error && <p role="alert">{error}</p>}
