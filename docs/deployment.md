@@ -68,12 +68,13 @@ displayed application name or domain; the app cannot set the account chooser tex
 Test an existing Google account, a guest-to-Google switch, a cancelled popup,
 blocked Google scripts, and return to `/events?host=1` before release. Without the
 client ID or Google script, the app offers a clear unavailable state and keeps
-email-link sign-in available only when separately enabled. No custom Supabase
-auth-domain add-on is required.
+email/password login available. No custom Supabase auth-domain add-on is required.
 
 ### Email sign-in delivery
 
-Email sign-in is off by default (`NEXT_PUBLIC_EMAIL_SIGN_IN_ENABLED=false`). The
+Email signup, confirmation resends and password recovery are off by default
+(`NEXT_PUBLIC_EMAIL_SIGN_IN_ENABLED=false`). Existing password accounts can still
+log in without sending email. The
 built-in Supabase mailer is for testing: it is restricted to project-team email
 addresses and currently allows only two messages per hour across the project.
 Changing the UI resend cooldown does not remove that delivery restriction.
@@ -85,12 +86,56 @@ Before enabling public email sign-in:
    Settings, not in source code or `NEXT_PUBLIC_` variables.
 3. Check Supabase's Auth email rate limits and the provider's own quotas. Keep
    appropriate abuse controls; custom SMTP is not unlimited delivery.
-4. Test delivery to a non-team address and complete the link flow, including
-   return-to-room URLs, spam-folder placement and disabled link tracking.
+4. Leave Confirm email enabled in the Supabase email provider settings. Test
+   registration, confirmation, password login, confirmation resends and reset
+   delivery to a non-team address. The reset destination is
+   `/account/reset-password`; preserve its safe `next` room destination. Existing
+   allowed-origin `/**` entries cover this path. Check spam placement and disable
+   link tracking. Never log passwords, tokens or emailed link URLs.
 5. Set `NEXT_PUBLIC_EMAIL_SIGN_IN_ENABLED=true` for the verified environment and
-   rebuild. Until then, the site clearly offers Google rather than a failing form.
+   rebuild. Until then, Google and existing password logins work, while email
+   signup/recovery actions are visibly unavailable. This UI flag is a rollout
+   switch, not a substitute for server-side abuse protection or rate limits.
+
+The frontend requests at least 12 characters for new passwords. Configure matching
+password strength rules in Supabase before public signup; backend rules remain
+authoritative. Never disable email confirmation to make a delivery test pass.
+Credential creation and password-change tests must be completed by the user; do
+not fill real passwords on their behalf. Mock tests exercise SDK requests without
+creating accounts or sending live email.
 
 See [Supabase's SMTP guide](https://supabase.com/docs/guides/auth/auth-smtp).
+
+### Passkey preparation and testing
+
+Passkeys use the pinned SDK's `auth.signInWithPasskey`, `auth.registerPasskey` and
+`auth.passkey` management methods. Supabase currently documents this support as
+experimental. Keep Google available as a backup and retain the existing backend
+authorization rules. No private keys, PINs or biometric data are stored by this app.
+
+The UI is off by default (`NEXT_PUBLIC_PASSKEYS_ENABLED=false`). To test it:
+
+1. In Supabase Authentication → Passkeys, configure the display name `PixelsDraw`,
+   a stable RP ID and exact HTTPS origins. Do not use `vercel.app` as an RP ID.
+   Testing on the current site uses `pixel-art-studio-alpha-one.vercel.app` as the
+   RP ID and `https://pixel-art-studio-alpha-one.vercel.app` as its origin.
+2. Set `NEXT_PUBLIC_PASSKEY_RP_ID` to that same RP ID and enable
+   `NEXT_PUBLIC_PASSKEYS_ENABLED=true` only on the environment being tested.
+   Localhost needs an isolated backend configured with RP ID `localhost`; do not
+   change the production project's RP ID just to make a localhost test pass.
+3. Sign in to an existing confirmed account with Google. The user must personally
+   choose Add a passkey and complete their device/password-manager prompt. Test
+   cancellation, a successful login, sign out and a second passkey login. Never
+   create, export, or delete the user's real credentials through automation.
+4. Test another browser/device and unsupported-browser messages. Removing a
+   passkey requires an explicit in-app confirmation and a remaining backup method.
+
+Passkeys are domain-bound. Moving to the eventual custom domain requires new
+enrollments; Vercel test credentials cannot silently migrate. Keep enrollment
+limited to testing until that domain decision is final. A general release requires
+the real device ceremony and backend configuration checks, not only mock tests.
+
+See [Supabase's passkey guide](https://supabase.com/docs/guides/auth/passkeys).
 
 ### Competition lobby and six-hour schedule release
 
