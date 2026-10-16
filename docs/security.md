@@ -15,9 +15,10 @@ the existing 60-second interval per recipient retained.
 
 The frontend changes remain on the feature branch, not `main`. Final raw-ballot
 revocation waits for that production frontend deployment. Turnstile token handling
-is prepared for Google, password login, signup, reset, resend and anonymous guest
-creation, but the widget keys and hosted CAPTCHA enforcement are not configured
-or end-to-end tested. Do not treat prepared code as active protection. No
+covers Google, password login, signup, reset, resend and anonymous guest creation.
+The Managed widget is restricted to the production and feature-preview hostnames;
+its secret is stored only in Supabase and its public site key is configured in
+Vercel. Enforcement remains off until the production frontend cutover. No
 paid provider upgrade was purchased and no destructive data purge was performed.
 
 Local widget checks used Cloudflare's official passing/failing test site keys:
@@ -25,9 +26,11 @@ concurrent Google/email widgets load, mode changes reset the widget, and failure
 keep submission locked with a retry action. No real Auth requests were submitted
 with test tokens. Test keys were removed from the temporary development config.
 Supabase's Usage page still shows Free Plan, no quota exceeded, and no overage
-billing (restrictions may apply instead). Vercel and Cloudflare dashboard access
-currently requires the owner to sign in again; their remaining configuration is
-not verified by this release.
+billing (restrictions may apply instead). Vercel remains on Hobby with no payment
+method or AI-credit auto-reload. Paid spending budgets and anomaly alerts are
+unavailable on this plan; no paid upgrade was made to enable them. Existing email
+and web notifications are enabled. These are verified settings, not a guarantee
+that attacks cannot exhaust free allowances or interrupt service.
 
 ## Public repository and browser configuration
 
@@ -63,8 +66,10 @@ configuration are ignored. Only `.env.example` is intentionally tracked.
 
 Follow the Turnstile checklist in `docs/deployment.md` before merging this release.
 Keep the server CAPTCHA switch off until the matching frontend has been deployed
-and verified. The next merge remains pending that setup and provider usage-alert
-review. No new spending alert configuration has been verified yet.
+and verified. Finish the real-widget check, deploy the matching frontend, enable
+enforcement and verify token rejection/acceptance. Then finish the raw-ballot
+permission cutover. Real signup/confirmation and device passkey enrollment need
+owner testing; passkeys remain disabled for this release.
 
 No migration deletes accounts, drawings, ballots or history. Existing large
 artwork is preserved. New online competitions are capped at a 256-pixel side and
