@@ -68,7 +68,29 @@ displayed application name or domain; the app cannot set the account chooser tex
 Test an existing Google account, a guest-to-Google switch, a cancelled popup,
 blocked Google scripts, and return to `/events?host=1` before release. Without the
 client ID or Google script, the app offers a clear unavailable state and keeps
-email-link sign-in available. No custom Supabase auth-domain add-on is required.
+email-link sign-in available only when separately enabled. No custom Supabase
+auth-domain add-on is required.
+
+### Email sign-in delivery
+
+Email sign-in is off by default (`NEXT_PUBLIC_EMAIL_SIGN_IN_ENABLED=false`). The
+built-in Supabase mailer is for testing: it is restricted to project-team email
+addresses and currently allows only two messages per hour across the project.
+Changing the UI resend cooldown does not remove that delivery restriction.
+
+Before enabling public email sign-in:
+
+1. Choose an email provider and verify the sender/domain it requires.
+2. Configure its SMTP credentials in Supabase → Authentication → Emails → SMTP
+   Settings, not in source code or `NEXT_PUBLIC_` variables.
+3. Check Supabase's Auth email rate limits and the provider's own quotas. Keep
+   appropriate abuse controls; custom SMTP is not unlimited delivery.
+4. Test delivery to a non-team address and complete the link flow, including
+   return-to-room URLs, spam-folder placement and disabled link tracking.
+5. Set `NEXT_PUBLIC_EMAIL_SIGN_IN_ENABLED=true` for the verified environment and
+   rebuild. Until then, the site clearly offers Google rather than a failing form.
+
+See [Supabase's SMTP guide](https://supabase.com/docs/guides/auth/auth-smtp).
 
 ### Competition lobby and six-hour schedule release
 

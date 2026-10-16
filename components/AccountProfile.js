@@ -28,7 +28,7 @@ export default function AccountProfile({ client, user }) {
   }
   return <section className="account-profile" aria-labelledby="profile-heading">
     <h2 id="profile-heading">Your profile</h2>
-    <p>Choose how people know you on PixelsDraw.</p>
+    <p>Edit your name anytime, or add a nickname if you prefer.</p>
     <form onSubmit={save}>
       <label>Name<input required name="name" autoComplete="name" maxLength={60} value={name} onChange={event => setName(event.target.value)} /></label>
       <label><span>Nickname (optional)</span><input name="nickname" autoComplete="nickname" maxLength={60} value={nickname} onChange={event => setNickname(event.target.value)} /></label>

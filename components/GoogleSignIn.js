@@ -40,7 +40,7 @@ export default function GoogleSignIn({ client, disabled = false, onBusyChange })
         // Reset Google's page-level nonce and preserve the current room/host URL.
         window.location.reload();
       } catch (error) {
-        if (!cancelled) setMessage(friendlyAuthError(error, "Could not finish Google sign-in. Please try again or use email."));
+        if (!cancelled) setMessage(friendlyAuthError(error, "Could not finish Google sign-in. Please try again."));
       } finally {
         inFlight.current = false;
         onBusyChange?.(false);
@@ -56,13 +56,13 @@ export default function GoogleSignIn({ client, disabled = false, onBusyChange })
         type: "standard", theme: "outline", size: "large", text: "continue_with", shape: "pill",
         width, click_listener: () => { if (!cancelled) activeButton = receive; },
       });
-    }).catch(() => { if (!cancelled) setMessage("Google sign-in could not load. Refresh to retry, or use email."); });
+    }).catch(() => { if (!cancelled) setMessage("Google sign-in could not load. Please refresh to try again."); });
     return () => { cancelled = true; if (activeButton === receive) activeButton = null; };
   }, [client, loaded, disabled, onBusyChange]);
 
-  if (!clientId) return <p className="google-signin-status">Google sign-in is temporarily unavailable. You can use email below.</p>;
+  if (!clientId) return <p className="google-signin-status">Google sign-in is temporarily unavailable. Please try again later.</p>;
   return <div className="google-signin" aria-busy={busy}>
-    <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" onReady={() => setLoaded(true)} onError={() => setMessage("Google sign-in could not load. Refresh to retry, or use email.")} />
+    <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" onReady={() => setLoaded(true)} onError={() => setMessage("Google sign-in could not load. Please refresh to try again.")} />
     <div ref={container} className="google-signin-button" inert={disabled || busy} />
     {!loaded && !message && <p role="status">Loading Google sign-in…</p>}
     {busy && <p role="status">Signing you in…</p>}

@@ -4,11 +4,21 @@ import { accountProfile, draftOwner } from "../lib/account-profile.mjs";
 import { editorDraftKeys } from "../lib/editor-lab-storage.mjs";
 import { readFileSync } from "node:fs";
 
-test("Google names and email are never automatically public", () => {
+test("email is never a display name and nickname is optional", () => {
   assert.equal(accountProfile({ email: "private@example.com", user_metadata: { full_name: "Private Name" } }).displayName, "");
   assert.equal(accountProfile(null).displayName, "");
   assert.equal(accountProfile({ user_metadata: { profile_name: " Name ", profile_nickname: " Sprite " } }).displayName, "Sprite");
   assert.equal(accountProfile({ user_metadata: { profile_name: " Name ", profile_nickname: " " } }).displayName, "Name");
+});
+
+test("Google starts a profile with its name, without overriding edits or nicknames", () => {
+  const user = { app_metadata: { provider: "google" }, user_metadata: { full_name: "Google Name" } };
+  assert.deepEqual(accountProfile(user), { name: "Google Name", nickname: "", displayName: "Google Name" });
+  assert.equal(accountProfile({ ...user, user_metadata: { ...user.user_metadata, profile_name: "Edited name" } }).name, "Edited name");
+  assert.equal(accountProfile({ ...user, user_metadata: { ...user.user_metadata, profile_nickname: "Xenon" } }).displayName, "Xenon");
+  assert.equal(accountProfile({ identities: [{ provider: "google" }], user_metadata: { name: "  Google Fallback  " } }).name, "Google Fallback");
+  assert.equal(accountProfile({ app_metadata: { providers: ["email", "google"] }, user_metadata: { full_name: "Linked user" } }).name, "Linked user");
+  assert.equal(accountProfile({ ...user, user_metadata: {} }).displayName, "");
 });
 
 test("editors wait for auth and remount their document and room state on identity changes", () => {

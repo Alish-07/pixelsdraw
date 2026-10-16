@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { friendlyAuthError } from "@/lib/site-ui.mjs";
 import GoogleSignIn from "./GoogleSignIn";
+import { emailSignInEnabled } from "@/lib/site-config.mjs";
 
 export default function AccountPanel({ client, user, ready, publicChallenge = false, general = false }) {
+  const emailEnabled = emailSignInEnabled();
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
@@ -18,7 +20,7 @@ export default function AccountPanel({ client, user, ready, publicChallenge = fa
 
   async function sendSignInLink(event) {
     event.preventDefault();
-    if (busy || googleBusy || emailWait) return;
+    if (!emailEnabled || busy || googleBusy || emailWait) return;
     const email = new FormData(event.currentTarget).get("email").trim();
     setBusy(true);
     setMessage("");
@@ -65,14 +67,15 @@ export default function AccountPanel({ client, user, ready, publicChallenge = fa
           <button className="text-button" disabled={busy} onClick={signOut}>Sign out</button></div>
       ) : (
         <div className="host-signin-options">
-          <div><h3>{general ? "Welcome to PixelsDraw" : publicChallenge ? "Join the challenge" : "Create your own competition"}</h3><p>{general ? "Sign in or create your account with Google or an email link." : publicChallenge ? "Sign in to share your art and vote for your favorites." : "Sign in to host. Your friends can join with just a nickname."}</p></div>
+          <div><h3>{general ? "Welcome to PixelsDraw" : publicChallenge ? "Join the challenge" : "Create your own competition"}</h3><p>{general ? emailEnabled ? "Sign in or create your account with Google or an email link." : "Continue with Google to sign in or create your account." : publicChallenge ? "Sign in to share your art and vote for your favorites." : "Sign in to host. Your friends can join with just a nickname."}</p></div>
           <GoogleSignIn client={client} disabled={busy} onBusyChange={setGoogleBusy} />
-          <div className="signin-divider"><span>or use email</span></div>
+          {emailEnabled ? <><div className="signin-divider"><span>or use email</span></div>
           <form className="email-signin-form" onSubmit={sendSignInLink}>
             <label>Email address<input type="email" name="email" autoComplete="email" placeholder="you@example.com" maxLength={254} required disabled={busy || googleBusy} /></label>
             <button className="email-link-button" disabled={busy || googleBusy || emailWait > 0}>{busy ? "Please wait…" : emailWait ? `Send again in ${emailWait}s` : "Send sign-in link"}</button>
           </form>
-          <p className="email-limit-note">No password to remember. Having trouble getting a link? Try Google.</p>
+          <p className="email-limit-note">No password to remember. Having trouble getting a link? Try Google.</p></>
+            : <p className="email-unavailable-note">Email sign-in isn’t available yet. Please continue with Google.</p>}
           <p className="account-policy-note">Read our <Link href="/privacy">privacy policy</Link> and <Link href="/terms">community rules and terms</Link> before participating.</p>
         </div>
       )}

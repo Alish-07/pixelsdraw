@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { siteUrl, allowIndexing } from '../lib/site-config.mjs';
+import { siteUrl, allowIndexing, emailSignInEnabled } from '../lib/site-config.mjs';
+
+test('email sign-in stays unavailable until delivery is explicitly enabled', () => {
+  for (const value of ['', 'false', 'TRUE', '1', null, true]) assert.equal(emailSignInEnabled(value), false);
+  assert.equal(emailSignInEnabled('true'), true);
+});
 
 test('production site origins accept HTTPS and reject unsafe or path URLs', () => {
   assert.equal(siteUrl('https://pixels.example/'), 'https://pixels.example');
