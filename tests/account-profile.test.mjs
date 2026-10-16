@@ -11,6 +11,13 @@ test("email is never a display name and nickname is optional", () => {
   assert.equal(accountProfile({ user_metadata: { profile_name: " Name ", profile_nickname: " " } }).displayName, "Name");
 });
 
+test("account messages reset with identity and successful sign-out leaves no stale notice", () => {
+  const panel = readFileSync(new URL("../components/AccountPanel.js", import.meta.url), "utf8");
+  assert.match(panel, /<AccountPanelSession key=\{props\.user\?\.id \|\| "guest"\}/);
+  assert.doesNotMatch(panel, /setMessage\("Signed out\."\)/);
+  assert.match(panel, /Could not sign out\. Please try again\./);
+});
+
 test("Google starts a profile with its name, without overriding edits or nicknames", () => {
   const user = { app_metadata: { provider: "google" }, user_metadata: { full_name: "Google Name" } };
   assert.deepEqual(accountProfile(user), { name: "Google Name", nickname: "", displayName: "Google Name" });

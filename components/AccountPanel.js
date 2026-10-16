@@ -6,20 +6,25 @@ import GoogleSignIn from "./GoogleSignIn";
 import EmailPasswordAuth from "./EmailPasswordAuth";
 import { PasskeySignIn } from "./Passkeys";
 
-export default function AccountPanel({ client, user, ready, publicChallenge = false, general = false }) {
+export default function AccountPanel(props) {
+  // Discard messages and pending form state when the account changes.
+  return <AccountPanelSession key={props.user?.id || "guest"} {...props} />;
+}
+
+function AccountPanelSession({ client, user, ready, publicChallenge = false, general = false }) {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [passkeyBusy, setPasskeyBusy] = useState(false);
 
   async function signOut() {
+    setMessage("");
     setBusy(true);
     try {
       const { error } = await client.auth.signOut({ scope: "local" });
       if (error) throw error;
-      setMessage("Signed out.");
-    } catch (error) {
-      setMessage(error.message || "Could not sign out.");
+    } catch {
+      setMessage("Could not sign out. Please try again.");
     } finally {
       setBusy(false);
     }

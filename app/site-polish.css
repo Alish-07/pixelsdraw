@@ -106,6 +106,9 @@ html[data-theme] .competition-page .code-display :is(span, strong, button) { col
 .account-profile input { min-width: 0; width: 100%; padding: 12px; border: 1px solid var(--site-border); border-radius: 8px; background: var(--site-surface); color: inherit; font: inherit; }
 .account-profile p { line-height: 1.6; }
 .account-profile button { justify-self: start; }
+.account-panel .account-row { align-items: center; gap: 12px 24px; }
+.account-row > span { min-width: 0; }
+.account-row > button { flex-shrink: 0; }
 .google-signin { max-width: 100%; min-width: 0; }
 .google-signin-button { width: 280px; max-width: 100%; min-height: 40px; }
 .google-signin-button[inert] { opacity: .6; }
