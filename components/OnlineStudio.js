@@ -2,11 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { getSupabase } from "@/lib/supabase";
 import { isValidJoinCode, normalizeJoinCode, normalizeNickname } from "@/lib/competition.mjs";
 import AccountPanel from "./AccountPanel";
-import PixelCanvas from "./PixelCanvas";
 import CompetitionSettings from "./CompetitionSettings";
 import CompetitionGallery from "./CompetitionGallery";
 import SuggestedField from "./SuggestedField";
@@ -20,7 +19,11 @@ import { accountProfile, draftOwner } from "@/lib/account-profile.mjs";
 import AuthCaptcha from "./AuthCaptcha";
 import { captchaEnabled } from "@/lib/captcha.mjs";
 import { participantSession } from "@/lib/guest-auth.mjs";
+import { roomWithJoinReceipt } from "@/lib/room-join.mjs";
 
+const PixelCanvas = dynamic(() => import("./PixelCanvas"), {
+  loading: () => <p role="status">Opening drawing tools…</p>,
+});
 
 function competitionError(error, fallback) {
   if (["PGRST202", "42703"].includes(error?.code)) return "Competitions are temporarily unavailable. Please try again shortly.";
@@ -116,19 +119,28 @@ function Ballot({ client, event, user, onSaved, isHost, votingClosed = false }) 
 }
 
 export default function OnlineStudio(props) {
-  const { user, ready } = useAuth();
-  if (!ready) return <p role="status">Opening competitions…</p>;
-  return <AccountOnlineStudio key={draftOwner(user)} {...props} owner={draftOwner(user)} />;
+  const auth = useAuth();
+  return <RoomSession key={props.eventId || (props.initialHosting ? "host" : "browse")} {...props} auth={auth} />;
 }
 
-function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) {
+function RoomSession({ auth, ...props }) {
+  const { client, user, ready } = auth;
+  // The room view still resets on identity changes, but this one in-flight
+  // operation survives the switch from signed out to a nickname-only session.
+  const [joiningRoom, setJoiningRoom] = useState(false);
+  const [joinResult, setJoinResult] = useState(null);
+  if (!ready) return <p role="status">Opening competitions…</p>;
+  return <AccountOnlineStudio key={draftOwner(user)} {...props} owner={draftOwner(user)}
+    client={client} user={user} joiningRoom={joiningRoom} setJoiningRoom={setJoiningRoom}
+    joinResult={joinResult} setJoinResult={setJoinResult} />;
+}
+
+function AccountOnlineStudio({ owner, eventId = null, initialHosting = false, client, user,
+  joiningRoom, setJoiningRoom, joinResult, setJoinResult }) {
   const nicknameKeyPrefix = `pixelsdraw:competition-nickname:${owner}:`;
   const hosting = initialHosting;
   const router = useRouter();
-  const [client] = useState(getSupabase);
-  const [user, setUser] = useState(null);
-  const [authReady, setAuthReady] = useState(false);
-  const [event, setEvent] = useState(null);
+  const [snapshot, setEvent] = useState(null);
   const [events, setEvents] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -138,9 +150,7 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
   const [captchaAttempt, setCaptchaAttempt] = useState(0);
   const joining = useRef(false);
   const [loadError, setLoadError] = useState("");
-  const [showEditor, setShowEditor] = useState(false);
-  const [participantName, setParticipantName] = useState("");
-  const [participantReady, setParticipantReady] = useState(!eventId);
+  const [showEditor, setShowEditor] = useState(null);
   const [now, setNow] = useState(0);
   const [historyTab, setHistoryTab] = useState("current");
   const [moderator, setModerator] = useState(null);
@@ -149,34 +159,20 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
   const [deleteTarget, setDeleteTarget] = useState(null);
   const deleteDialog = useRef(null);
   useEffect(() => { const tick = window.setTimeout(() => { setNow(Date.now()); }, 0); return () => window.clearTimeout(tick); }, []);
-  const requestNumber = useRef(0);
   const snapshotCache = useRef(null);
-  const refreshing = useRef(false);
+  const refreshing = useRef(null);
   const retryAfter = useRef(0);
   const competitionEditor = useRef(null);
   const hostUser = user && !user.is_anonymous ? user : null;
+  const canLoadHostedRooms = Boolean(!eventId && !hosting && hostUser);
+  const receipt = joinResult?.roomId === eventId && joinResult.owner === owner ? joinResult : null;
+  const event = roomWithJoinReceipt(snapshot, user?.id, receipt);
+  const participantName = event?.my_nickname || "";
+  const editorVisible = showEditor ?? Boolean(receipt?.draw);
   const isHost = Boolean(event && event.host_id === user?.id);
 
   useEffect(() => {
-    if (!client) return;
-    let cancelled = false;
-    let authChanged = false;
-    client.auth.getSession().then(({ data, error }) => {
-      if (cancelled || authChanged) return;
-      if (error) setMessage(error.message);
-      setUser(data.session?.user || null);
-      setAuthReady(true);
-    }).catch(() => {
-      if (!cancelled) { setMessage("Could not check your account. Refresh to retry."); setAuthReady(true); }
-    });
-    const { data: { subscription } } = client.auth.onAuthStateChange((_name, session) => {
-      authChanged = true;
-      if (!cancelled) { setUser(session?.user || null); setAuthReady(true); }
-    });
-    return () => { cancelled = true; subscription.unsubscribe(); };
-  }, [client]);
-
-  useEffect(() => {
+    if (!canLoadHostedRooms) return;
     let cancelled = false;
     async function check() {
       let allowed = false;
@@ -190,74 +186,63 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
     }
     check();
     return () => { cancelled = true; };
-  }, [client, user]);
+  }, [client, canLoadHostedRooms, user]);
 
   useEffect(() => {
     if (!eventId) return;
     const timer = window.setTimeout(() => {
       try {
         const savedName = normalizeNickname(localStorage.getItem(nicknameKeyPrefix + eventId));
-        setParticipantName(savedName);
-        setShowEditor(Boolean(savedName));
+        if (savedName) setShowEditor(true);
       } catch { /* A disabled browser store must not prevent joining a room. */ }
-      finally {
-        setParticipantReady(true);
-      }
     }, 0);
     return () => window.clearTimeout(timer);
   }, [eventId, nicknameKeyPrefix]);
 
-  const refresh = useCallback(async () => {
-    if (!client || refreshing.current || Date.now() < retryAfter.current) return;
-    refreshing.current = true;
-    const request = ++requestNumber.current;
-    try {
-      if (eventId) {
-        const cached = snapshotCache.current?.id === eventId ? snapshotCache.current : null;
-        const { data, error } = await client.rpc("pixel_event_snapshot_delta", { p_event: eventId, p_art_version: cached?.art_version || null });
-        if (error) throw error;
-        if (request !== requestNumber.current) return;
-        const next = data?.art_unchanged && cached ? { ...cached, ...data } : data;
-        snapshotCache.current = next;
-        setEvent(next);
-        if (data?.my_nickname) {
-          setParticipantName(data.my_nickname);
-          try { localStorage.setItem(nicknameKeyPrefix + eventId, data.my_nickname); } catch { /* Keep the live session working without browser storage. */ }
-        }
-      } else if (hostUser) {
-        const { data, error } = await client.rpc("pixel_host_events");
-        if (error) throw error;
-        if (request !== requestNumber.current) return;
-        setEvents(data);
-        setNow(Date.now());
-      } else {
-        setEvents([]);
-      }
-      setLoadError("");
-    } catch (error) {
-      if (error.code === "PT429" || error.status === 429) retryAfter.current = Date.now() + 60000;
-      if (request === requestNumber.current) setLoadError(competitionError(error, "Could not load competitions."));
-    } finally {
-      refreshing.current = false;
-      if (request === requestNumber.current) setLoaded(true);
+  const refresh = useCallback(async (afterMutation = false) => {
+    if (!client || (!eventId && !canLoadHostedRooms)) return;
+    while (refreshing.current) {
+      if (!afterMutation) return;
+      await refreshing.current;
     }
-  }, [client, eventId, hostUser, nicknameKeyPrefix]);
+    if (Date.now() < retryAfter.current) return;
+    const request = (async () => {
+      try {
+        if (eventId) {
+          const cached = snapshotCache.current?.id === eventId ? snapshotCache.current : null;
+          const { data, error } = await client.rpc("pixel_event_snapshot_delta", { p_event: eventId, p_art_version: cached?.art_version || null });
+          if (error) throw error;
+          const next = data?.art_unchanged && cached ? { ...cached, ...data } : data;
+          snapshotCache.current = next;
+          setEvent(next);
+          if (data?.my_nickname) {
+            try { localStorage.setItem(nicknameKeyPrefix + eventId, data.my_nickname); } catch { /* Keep the live session working without browser storage. */ }
+          }
+        } else {
+          const { data, error } = await client.rpc("pixel_host_events");
+          if (error) throw error;
+          setEvents(data);
+          setNow(Date.now());
+        }
+        setLoadError("");
+      } catch (error) {
+        if (error.code === "PT429" || error.status === 429) retryAfter.current = Date.now() + 60000;
+        setLoadError(competitionError(error, "Could not load competitions."));
+      } finally {
+        setLoaded(true);
+      }
+    })();
+    refreshing.current = request;
+    try { await request; }
+    finally { refreshing.current = null; }
+  }, [client, eventId, canLoadHostedRooms, nicknameKeyPrefix]);
 
   useEffect(() => {
-    // The database response is the external event that updates this client view.
-    refresh();
-    const request = requestNumber.current;
-    return () => {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      if (requestNumber.current === request) requestNumber.current++;
-    };
-  }, [refresh]);
-
-  useEffect(() => {
-    if (!eventId && !hostUser) return;
+    if (joiningRoom || (!eventId && !canLoadHostedRooms)) return;
+    refresh(true);
     const timer = window.setInterval(() => { if (document.visibilityState === "visible") refresh(); }, eventId ? 10000 : 30000);
     return () => window.clearInterval(timer);
-  }, [eventId, hostUser, refresh]);
+  }, [eventId, canLoadHostedRooms, joiningRoom, refresh]);
 
   useEffect(() => {
     if (!(event?.submission_deadline && event.phase === "submissions") && !(event?.scheduled_start_at && event.phase === "lobby") && !(event?.voting_deadline && event.phase === "voting")) return;
@@ -268,7 +253,7 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
 
   const hasSubmitted = Boolean(event?.my_entry_exists || event?.entries.some((entry) => entry.artist_id === user?.id));
   const isAdmitted = event?.my_admission === "admitted";
-  const heartbeatStatus = event?.phase === "voting" ? "voting" : hasSubmitted ? "submitted" : event?.phase === "submissions" && showEditor && isAdmitted ? "drawing" : "joined";
+  const heartbeatStatus = event?.phase === "voting" ? "voting" : hasSubmitted ? "submitted" : event?.phase === "submissions" && editorVisible && isAdmitted ? "drawing" : "joined";
   useEffect(() => {
     if (!client || !eventId || !user?.id || !participantName || isHost || !event?.my_admission) return;
     let cancelled = false;
@@ -297,13 +282,6 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
     };
   }, [client, eventId, user?.id, participantName, isHost, event?.my_admission, heartbeatStatus, refresh]);
 
-  async function ensureParticipantSession(nickname) {
-    const participant = await participantSession(client, nickname, captchaToken);
-    setUser(participant);
-    setAuthReady(true);
-    return participant;
-  }
-
   async function joinCompetition(formEvent) {
     formEvent.preventDefault();
     if (!client || busy || joining.current) return;
@@ -328,27 +306,29 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
 
   async function joinEventWithNickname(formEvent) {
     formEvent.preventDefault();
-    if (busy || joining.current) return;
+    if (busy || joiningRoom || joining.current) return;
     const data = new FormData(formEvent.currentTarget);
     const nickname = normalizeNickname(suggestedValue(data, "nickname"));
     if (!nickname) return setMessage("Choose a nickname to join this competition.");
     joining.current = true;
+    setJoiningRoom(true);
+    setJoinResult(null);
     setBusy(true);
     setMessage("");
+    let participant = user;
     try {
       if (event.challenge_key && !hostUser) throw new Error("Sign in with Google or email to join a public challenge.");
-      await ensureParticipantSession(nickname);
+      participant ||= await participantSession(client, nickname, captchaToken);
       const { data: joined, error } = await client.rpc("pixel_join_event_v2", { p_event: event.id, p_nickname: nickname, p_suggested: data.get("nicknameAuto") === "true" });
       if (error) throw error;
-      try { localStorage.setItem(nicknameKeyPrefix + event.id, joined.nickname); } catch { /* Joining does not depend on draft storage. */ }
-      setParticipantName(joined.nickname);
-      setShowEditor(event.phase !== "voting");
-      setMessage(joined.admission === "pending" ? "Your request is sent. Waiting for host approval." : `Joined as ${joined.nickname}.`);
-      await refresh();
+      setJoinResult({ ...joined, roomId: event.id, userId: participant.id, owner: draftOwner(participant),
+        draw: event.phase !== "voting" });
     } catch (error) {
-      setMessage(error.message || "Could not join with that nickname.");
+      setJoinResult({ roomId: event.id, owner: draftOwner(participant),
+        attemptedNickname: nickname, error: competitionError(error, "Could not join with that nickname.") });
     } finally {
       joining.current = false;
+      setJoiningRoom(false);
       setCaptchaToken(""); setCaptchaAttempt(value => value + 1);
       setBusy(false);
     }
@@ -356,9 +336,10 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
 
   async function createEvent(formEvent) {
     formEvent.preventDefault();
-    if (!user || busy) return;
+    if (!hostUser || !client || busy || joining.current) return;
     const data = new FormData(formEvent.currentTarget);
 
+    joining.current = true;
     setBusy(true);
     setMessage("");
     try {
@@ -366,10 +347,11 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
         p_title: suggestedValue(data, "title", "Pixel Challenge"), p_theme: suggestedValue(data, "theme", "A tiny world"), ...settingsFromForm(data),
       });
       if (error) throw error;
+      setMessage("Competition created. Opening your room…");
       router.push(`/events/${id}`);
     } catch (error) {
       setMessage(competitionError(error, "Could not create the competition."));
-    } finally {
+      joining.current = false;
       setBusy(false);
     }
   }
@@ -486,7 +468,7 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
       </section><PublicChallenges client={client} /></> : <section className="host-area host-setup">
         <Link className="back-link" href="/events">← Back to competitions</Link>
         <div className="section-heading"><div><p className="eyebrow">Your room, your rules</p><h1>Host a competition</h1><p>Choose a theme, set the rules, and invite your players.</p></div></div>
-        {!hostUser && (client ? <AccountPanel client={client} user={user} ready={authReady} /> : <p role="status">Hosting is temporarily unavailable. Please try again later.</p>)}
+        {!hostUser && (client ? <AccountPanel client={client} user={user} ready /> : <p role="status">Hosting is temporarily unavailable. Please try again later.</p>)}
         {message && <p role="status" className="local-notice">{message}</p>}
         {loadError && <p role="alert" className="error-notice">{loadError}</p>}
         {hostUser ? <div>
@@ -515,7 +497,7 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
           </div>
       </section>}
       {!hosting && user && moderator === user.id && <section className="lobby-moderation" aria-labelledby="lobby-moderation-heading"><div className="section-heading"><div><p className="eyebrow">Admin workspace</p><h2 id="lobby-moderation-heading">Moderation</h2><p>Review reports and keep public galleries welcoming.</p></div><button className="secondary-button" aria-controls="public-report-queue" aria-expanded={moderatorPanel} onClick={() => setModeratorPanel(!moderatorPanel)}>{moderatorPanel ? "Close reports" : "Review public reports"}</button></div>{moderatorPanel && <div id="public-report-queue"><ModerationPanel key={user.id} client={client} /></div>}</section>}
-    </> : !loaded ? <section className="event-loading"><p>Opening competition…</p></section> : !event ?
+    </> : !loaded ? <section className="event-loading"><p role="status">{joiningRoom || receipt?.admission ? "Joining competition…" : "Opening competition…"}</p></section> : !event ?
       <section className="competition unavailable-card"><h2>{loadError ? "Competition unavailable" : "Competition not found"}</h2>
         <p>{loadError || "Check the link or return to the competition lobby."}</p><Link href="/events">← Back to competitions</Link></section> : <>
         <section className="event-hero-card">
@@ -530,19 +512,19 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
             {event.phase === "voting" && <span className="timer-chip">Voting closes in {formatTimeLeft(event.voting_deadline, now)}</span>}</div>
           <button className="text-button" onClick={() => copyText(window.location.href, "Competition link copied.")}>Copy direct link</button><span className={`live-label ${loadError ? "offline" : ""}`}><i /> {loadError ? "Reconnecting…" : "Auto-updating"}</span>
         </div>
-        {!authReady || !participantReady ? <p className="host-signin-note">Preparing your participant session…</p>
+        {joiningRoom ? <p className="host-signin-note" role="status">Joining competition…</p>
           : isHost ? <div className="participant-session"><span>Signed in as the host.</span><Link href="/events">Manage your competitions</Link></div>
-            : event.challenge_key && !hostUser ? <AccountPanel client={client} user={user} ready={authReady} publicChallenge />
+            : event.challenge_key && !hostUser ? <AccountPanel client={client} user={user} ready publicChallenge />
             : user && participantName && event.my_admission ? <div className="participant-session"><span><strong>{participantName}</strong>{event.my_admission === "pending" ? " · Waiting for host approval" : event.my_admission === "rejected" ? " · Admission declined" : ""}</span><span>Room updates automatically</span></div>
               : (["lobby", "submissions"].includes(event.phase) || (event.phase === "voting" && !event.challenge_key)) && (event.challenge_key || event.admission_mode !== "closed") && (event.phase !== "submissions" || event.allow_late_join !== false) ? <form className="nickname-card" onSubmit={joinEventWithNickname}>
                 <div><p className="eyebrow">{event.phase === "voting" ? "Audience voting" : "Join this competition"}</p><h3>Choose your nickname</h3><p>{event.phase === "voting" ? "Join to vote for your favorites. Drawing and submissions are closed." : event.challenge_key ? "You are signed in. Choose a public nickname for your artwork." : "Your nickname appears beside your artwork. No email or password is needed."}</p></div>
-                <SuggestedField name="nickname" label="Nickname" kind="nickname" maxLength={60} autoComplete="nickname" preferredName={accountProfile(user).displayName} />
+                <SuggestedField name="nickname" label="Nickname" kind="nickname" maxLength={60} autoComplete="nickname" preferredName={receipt?.attemptedNickname || accountProfile(user).displayName} />
                 {!user && <AuthCaptcha key={captchaAttempt} onToken={setCaptchaToken} />}
                 <button className="primary-button" disabled={busy || (!user && captchaEnabled() && !captchaToken) || Boolean(event.phase === "voting" && event.voting_deadline && now >= Date.parse(event.voting_deadline))}>{busy ? "Joining…" : event.phase === "voting" ? "Join as audience" : "Join competition"}</button>
               </form> : <p className="host-signin-note">{event.challenge_key && event.phase === "voting" ? "Audience voting is open. You do not need to have submitted artwork to vote." : "This competition is no longer accepting new participants."}</p>}
         {event.challenge_key && <p className="host-hint">{event.phase === "submissions" ? "Create your entry before the timer ends. The gallery opens for voting when drawing closes." : event.phase === "voting" ? "The gallery is open. Pick your favorites before voting closes." : <>Ready for another? <Link href="/events#public-challenges">Find your next challenge</Link>.</>}</p>}
         {event.my_entry_hidden && <p className="error-notice" role="status">Your artwork has been hidden after moderator review. Your submission is preserved and cannot be resubmitted in this round.</p>}
-        {message && <p role="status" className="local-notice">{message}</p>}
+        {(message || receipt?.error) && <p role="status" className="local-notice">{message || receipt.error}</p>}
         {loadError && <p role="alert" className="error-notice">{loadError}</p>}
         <section className="competition event-room">
           {isHost && <>
@@ -575,8 +557,8 @@ function AccountOnlineStudio({ owner, eventId = null, initialHosting = false }) 
             ? <p className="success-notice">{event.challenge_key ? "Your artwork is submitted. The gallery and voting open automatically when drawing ends." : "Your artwork is submitted. You can view the gallery below when the host allows it."}</p>
             : user && participantName ? <>
                 <div className="participant-callout"><div><p className="eyebrow">Step 1 · Draw and submit</p><h3>Your {describeCanvas(event)} canvas is ready</h3><p>Choose a canvas allowed by the room rules. Your draft stays saved on this device.</p></div>
-                  <div><button className="primary-button" onClick={() => setShowEditor(!showEditor)}>{showEditor ? "Hide editor" : "Open editor"}</button>{showEditor && <button className="secondary-button" onClick={() => competitionEditor.current?.requestFullscreen().catch(() => setMessage("Fullscreen is unavailable in this browser."))}>Focus canvas · Esc to exit</button>}</div></div>
-                {showEditor && <div ref={competitionEditor} className="shared-editor pixel-workspace"><PixelCanvas isActive competition={event} participantName={participantName} onSubmitArtwork={submitArtwork} /></div>}
+                  <div><button className="primary-button" onClick={() => setShowEditor(!editorVisible)}>{editorVisible ? "Hide editor" : "Open editor"}</button>{editorVisible && <button className="secondary-button" onClick={() => competitionEditor.current?.requestFullscreen().catch(() => setMessage("Fullscreen is unavailable in this browser."))}>Focus canvas · Esc to exit</button>}</div></div>
+                {editorVisible && <div ref={competitionEditor} className="shared-editor pixel-workspace"><PixelCanvas isActive competition={event} participantName={participantName} onSubmitArtwork={submitArtwork} /></div>}
               </>
               : <p className="host-signin-note">Join with a nickname above when you are ready to create artwork.</p>)}
 
