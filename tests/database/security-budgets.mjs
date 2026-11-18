@@ -83,5 +83,71 @@ await assert.rejects(()=>db.exec("insert into auth.users(id,email_confirmed_at) 
 await limit('new_accounts_per_day',100);await limit('total_accounts',4);
 await assert.rejects(()=>db.exec("insert into auth.users(id,email_confirmed_at) values('00000000-0000-0000-0000-000000000005',null)"),/Registration is temporarily full/);
 await as(3);assert.deepEqual(await rpc('pixel_my_ballot',[room]),[]);
+
+// Rehearse 28 identities on a shared network. These are sequential transactions
+// in the isolated database, not a live CAPTCHA or concurrent network load test.
+await db.exec("update pixel_private.pixel_security_limits set amount=case name when 'total_accounts' then 1000 when 'requests_per_day' then 50000 when 'read_bytes_per_day' then 134217728 else 100 end where name in ('total_accounts','requests_per_day','read_bytes_per_day','new_accounts_per_day')");
+await db.exec("insert into auth.users(id) select (lpad(to_hex(n),32,'0'))::uuid from generate_series(1000,1027) n");
+const guest = n => '00000000-0000-0000-0000-'+(1000+n).toString(16).padStart(12,'0');
+await as(1);
+const rehearsal = await rpc('pixel_create_event_v5',['Rehearsal','Tiny worlds',32,JSON.stringify({mode:'fixed',sizes:[32],min:1,max:1024}),'disabled',true,false,900,0,true,'auto',false,6]);
+const {join_code: code} = await rpc('pixel_event_snapshot',[rehearsal]);
+assert.match(code,/^\d{6}$/);
+const mode = await db.query("select provolatile from pg_proc where oid='public.pixel_event_by_code(text)'::regprocedure");
+assert.equal(mode.rows[0].provolatile, 'v');
+async function request(role, id, name, args) {
+ await db.exec('begin');
+ try {
+   await db.exec('set local role '+role);
+   await db.query("select set_config('request.jwt.claim.sub',$1,true), set_config('request.method','POST',true), set_config('request.path',$2,true), set_config('request.headers','{\"x-forwarded-for\":\"192.0.2.50\"}',true)",[id,'/rpc/'+name]);
+   await db.query('select pixel_private.pixel_api_guard()');
+   const value = await rpc(name,args);
+   await db.exec('commit');
+   return value;
+ } catch (error) { await db.exec('rollback'); throw error; }
+}
+assert.equal(await request('anon','','pixel_event_by_code',[code]),rehearsal);
+assert.equal(await request('authenticated',uid(1),'pixel_event_by_code',[code.slice(0,3)+'-'+code.slice(3)]),rehearsal);
+for(let n=0;n<20;n++) assert.equal((await request('authenticated',guest(n),'pixel_join_event_v2',[rehearsal,'Artist '+n,false])).admission,'admitted');
+await as(1); await rpc('pixel_advance_event',[rehearsal,'submissions']);
+await assert.rejects(()=>request('authenticated',guest(20),'pixel_join_event_v2',[rehearsal,'Spectator',false]),/not accepting/);
+const entries=[];
+for(let n=0;n<16;n++) entries.push(await request('authenticated',guest(n),'pixel_submit_entry_v2',[rehearsal,'Artist '+n,'Sprite '+n,32,JSON.stringify([frame.map((color,i)=>i%17===n?'#fedcba':color)]),6]));
+await as(1); await rpc('pixel_advance_event',[rehearsal,'voting']);
+assert.equal(await request('anon','','pixel_event_by_code',[code]),rehearsal);
+await rpc('pixel_set_room_controls',[rehearsal,'closed',false,true]);
+await assert.rejects(()=>request('authenticated',guest(20),'pixel_join_event_v2',[rehearsal,'Spectator',false]),/not accepting/);
+await rpc('pixel_set_room_controls',[rehearsal,'approval',false,true]);
+assert.equal((await request('authenticated',guest(20),'pixel_join_event_v2',[rehearsal,'Spectator',true])).admission,'pending');
+await assert.rejects(()=>request('authenticated',guest(20),'pixel_save_ballot',[rehearsal,[entries[0]]]),/admitted/);
+await rpc('pixel_admit_player',[rehearsal,guest(20),true]);
+await rpc('pixel_set_room_controls',[rehearsal,'auto',false,true]);
+for(let n=21;n<28;n++) assert.equal((await request('authenticated',guest(n),'pixel_join_event_v2',[rehearsal,'Spectator',true])).admission,'admitted');
+await assert.rejects(()=>request('authenticated',guest(21),'pixel_submit_entry_v2',[rehearsal,'Spectator','Late',32,JSON.stringify([frame]),6]),/closed/);
+await assert.rejects(()=>request('authenticated',guest(0),'pixel_save_ballot',[rehearsal,[entries[0]]]),/own/);
+const gallery=await request('authenticated',guest(21),'pixel_event_snapshot_delta',[rehearsal,null]);
+assert.equal(gallery.entries.length,16);
+assert.ok((await request('authenticated',guest(21),'pixel_event_snapshot_delta',[rehearsal,gallery.art_version])).art_unchanged);
+const scores = new Map(entries.map(id=>[id,0]));
+await new Promise(resolve=>setTimeout(resolve,Math.max(0,Date.parse(gallery.voting_deadline)-Date.now()-3000)));
+for(let n=0;n<28;n++){
+ const choices=entries.filter((_,i)=>i!==n).slice(0,3);
+ await request('authenticated',guest(n),'pixel_save_ballot',[rehearsal,choices.slice().reverse()]);
+ await request('authenticated',guest(n),'pixel_save_ballot',[rehearsal,choices]);
+ choices.forEach((id,i)=>scores.set(id,scores.get(id)+3-i));
+}
+assert.deepEqual(await request('authenticated',guest(21),'pixel_my_ballot',[rehearsal]),entries.slice(0,3));
+await new Promise(resolve=>setTimeout(resolve,Math.max(0,Date.parse(gallery.voting_deadline)-Date.now()+100)));
+await assert.rejects(()=>request('authenticated',guest(21),'pixel_save_ballot',[rehearsal,[entries[2]]]),/closed/);
+assert.equal(await request('anon','','pixel_event_by_code',[code]),null);
+const results=await request('anon','','pixel_event_snapshot_delta',[rehearsal,null]);
+assert.equal(results.phase,'results');
+assert.equal(results.ballotCount,28);
+for(const entry of results.entries){
+ const points=scores.get(entry.id);
+ assert.equal(entry.score,Number((100*points/(28*3)).toFixed(2)));
+ assert.equal(entry.rank,1+[...scores.values()].filter(score=>score>points).length);
+}
+console.log('PASS: 28 participants, 16 artworks, late audience and admission checks, 28 counted ballots after replacements, deadline and independent final standings.');
 await db.close();
 console.log('PASS: room enumeration denied, private helpers inaccessible, creation/storage/request/transfer budgets enforced, rotating-IP guard, delta payload privacy and hook registration.');

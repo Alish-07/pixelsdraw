@@ -63,7 +63,7 @@ html[data-theme] .competition-lobby-hero .eyebrow { color: var(--site-accent-tex
 html[data-theme] .competition-page .host-launch { white-space: nowrap; display: inline-flex; gap: 20px; align-items: center; text-decoration: none; background: var(--site-selected); color: var(--site-accent-text); }
 .competition-lobby-hero .join-card { width: 100%; padding: 0; box-shadow: none; border: 0; }
 .competition-lobby-hero .join-card fieldset { margin: 0; padding: 0; border: 0; }
-.competition-lobby-hero .join-card .join-fields { grid-template-columns: 1fr 1fr auto; align-items: start; }
+.competition-lobby-hero .join-card .join-fields { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
 .competition-lobby-hero .join-card label { margin: 0; display: grid; gap: 6px; }
 .competition-lobby-hero .join-fields > .primary-button { margin-top: 25px; min-height: 51px; }
 html[data-theme] .competition-page .join-card input:focus { border-color: var(--site-accent); outline: 2px solid var(--site-accent-text); outline-offset: 2px; }
